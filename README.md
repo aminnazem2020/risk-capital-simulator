@@ -99,10 +99,42 @@ This project is licensed under the **MIT License** — free to use, modify, and 
 
 This simulator is an **educational and analytical tool**. It does not constitute financial advice. Simulation results are based on statistical models and do not guarantee future performance. Always conduct your own research and consult with a licensed financial professional before making real trading decisions.
 
----
+
 
 ## 🙏 Acknowledgements
 
 Built with the goal of helping traders think probabilistically about risk — the way institutions do — instead of chasing certainty.
 
 **If this tool helps you, share it with a trader who needs it.**
+
+
+
+---
+
+## 🇮🇷 توضیح فارسی
+
+### شبیه‌ساز مدیریت ریسک و سرمایه
+
+یک ابزار تحت وب برای شبیه‌سازی مونت‌کارلو ریسک معاملات، اندازه پوزیشن و تحلیل افت سرمایه. تمام محاسبات در مرورگر شما اجرا می‌شود.
+
+### نحوه استفاده
+
+1. فایل `index.html` را دانلود کنید
+2. روی آن دابل-کلیک کنید — در مرورگر باز می‌شود
+3. پارامترها را وارد کنید و روی «اجرای شبیه‌سازی» کلیک کنید
+
+### قابلیت‌ها
+
+- شبیه‌سازی ۲۰,۰۰۰ مسیر مونت‌کارلو
+- محاسبه Position Size از ۶ حالت قفل مختلف
+- محاسبه خودکار R:R از Entry / Stop / TP
+- مدل‌سازی کمیسیون در هر معامله
+- دو حالت سود: Compound و Profit Lock
+- ارزیابی حرفه‌ای تنظیمات طبق استانداردهای صنعت
+- پشتیبانی از تومان، ریال، دلار و یورو
+
+### نویسنده
+
+**مدیریت ریسک و سرمایه**
+- طراح و مدیر
+- 📞 **009224957723**
