@@ -1,0 +1,2774 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk & Capital Management Simulator</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Tahoma', 'Arial', sans-serif;
+    background: #1e1e1e;
+    color: #dddddd;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .app { display: flex; height: 100vh; }
+
+  .sidebar {
+    width: 520px;
+    background: #1e1e1e;
+    padding: 14px;
+    overflow-y: auto;
+    border-left: 1px solid #333;
+    font-size: 13px;
+  }
+  .sidebar::-webkit-scrollbar { width: 8px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: #1e1e1e; }
+
+  h1 {
+    font-size: 17px;
+    color: #00e0b0;
+    margin-bottom: 14px;
+    text-align: center;
+    font-weight: bold;
+  }
+  .section-title {
+    font-size: 13px;
+    margin: 18px 0 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+  .section-title.blue { color: #7db8ff; }
+  .section-title.purple { color: #c58fff; }
+  .section-title.gray { color: #aaaaaa; }
+  .section-title.teal { color: #00e0b0; }
+  .section-title.pink { color: #ff6b9d; }
+  .section-title.yellow { color: #ffcc66; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .row label {
+    width: 185px;
+    font-size: 12.5px;
+    font-weight: bold;
+    text-align: left;
+    color: #dddddd;
+    flex-shrink: 0;
+  }
+  .row input, .row select {
+    flex: 1;
+    background: #2b2b2b;
+    border: none;
+    color: #ffffff;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 13.5px;
+    font-weight: bold;
+    padding: 8px 10px;
+    text-align: center;
+    border-radius: 5px;
+    outline: none;
+    transition: all 0.2s;
+    direction: rtl;
+  }
+  .row input:focus, .row select:focus {
+    box-shadow: 0 0 0 2px #00e0b0;
+  }
+  .row input[readonly] {
+    background: #222 !important;
+    color: #888 !important;
+    cursor: not-allowed;
+  }
+
+  .field-entry input { background: #1f2e3d; color: #7db8ff; }
+  .field-stop  input { background: #3d1f1f; color: #ff6b6b; }
+  .field-tp    input { background: #1f3d2e; color: #7dffb0; }
+  .field-rr    input { background: #3d1f2e; color: #ff6b9d; }
+  .field-riskpct input { background: #1f3d2e; color: #7dffb0; }
+  .field-riskamt input { background: #3d2a1f; color: #ffb86b; }
+  .field-maxloss input { background: #4a1f1f; color: #ff8888; }
+  .field-pos   input { background: #2e1f3d; color: #c58fff; }
+  .field-comm  input { background: #4a3a1f; color: #ffcc66; }
+  .field-mode  select { background: #0a2a1f; color: #7dffb0; }
+  .field-computed input { background: #222; color: #ffb86b; }
+
+  .lock-row {
+    background: #0a1f1a;
+    border: 1px solid #00e0b0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .lock-row label {
+    color: #ff6b9d;
+    font-size: 12.5px;
+    font-weight: bold;
+  }
+  .lock-row select {
+    background: #111;
+    color: #00e0b0;
+    font-weight: bold;
+  }
+  .lock-hint {
+    font-size: 10px;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  button.primary {
+    width: 100%;
+    background: #00b894;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: 'Tahoma', sans-serif;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: all 0.2s;
+  }
+  button.primary:hover { background: #00a37f; }
+  button.secondary {
+    width: 100%;
+    background: #555;
+    color: white;
+    border: none;
+    padding: 9px;
+    font-size: 12px;
+    font-family: 'Tahoma', sans-serif;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 5px;
+  }
+  button.secondary:hover { background: #666; }
+
+  .preview {
+    background: #0a1f1a;
+    border: 1px solid #00e0b0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+  .preview-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    padding: 5px 0;
+    align-items: center;
+  }
+  .preview-row .label { color: #cccccc; font-size: 12.5px; }
+  .preview-row .value {
+    font-family: 'Tahoma', sans-serif;
+    font-weight: bold;
+    font-size: 13.5px;
+    direction: rtl;
+  }
+
+  .pct-green { color: #7dffb0 !important; font-weight: bold; }
+  .pct-red { color: #ff8888 !important; font-weight: bold; }
+  .pct-yellow { color: #ffcc66 !important; font-weight: bold; }
+  .pct-orange { color: #ffb86b !important; font-weight: bold; }
+  .pct-purple { color: #c58fff !important; font-weight: bold; }
+  .pct-pink { color: #ff6b9d !important; font-weight: bold; }
+  .pct-cyan { color: #7de8ff !important; font-weight: bold; }
+  .pct-gray { color: #aaa !important; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .tabs {
+    display: flex;
+    background: #181818;
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 12px 16px;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: #222;
+    color: #aaa;
+    border: none;
+    font-family: 'Tahoma', sans-serif;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: #1e1e1e;
+    color: #00e0b0;
+    border-bottom: 2px solid #00e0b0;
+  }
+  .tab:hover { color: #00e0b0; }
+
+  .tab-content { flex: 1; overflow: hidden; position: relative; }
+  .panel { display: none; width: 100%; height: 100%; overflow: auto; }
+  .panel.active { display: block; }
+
+  .chart-box { background: #111; margin: 6px; border-radius: 6px; }
+
+  .hl-bar {
+    padding: 8px 12px;
+    background: #181818;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid #333;
+  }
+  .hl-bar .label {
+    color: #aaa;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  .hl-btn {
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'Tahoma', sans-serif;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .hl-btn:hover { filter: brightness(1.2); }
+  .hl-btn.active { box-shadow: 0 0 0 2px #00e0b0; }
+
+  .table-wrapper { height: 100%; overflow: auto; padding: 8px; }
+  table.trades {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 12.5px;
+    direction: rtl;
+  }
+  table.trades th {
+    background: #2b2b2b;
+    color: #00e0b0;
+    padding: 10px 5px;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    direction: rtl;
+  }
+  table.trades td {
+    padding: 7px 5px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+  }
+  table.trades tr.win { background: #0b3d2e; color: #a8ffdc; }
+  table.trades tr.loss { background: #4a1414; color: #ffcaca; }
+  table.trades tr:hover { filter: brightness(1.2); }
+
+  .report {
+    background: #111;
+    color: #eee;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 13px;
+    padding: 16px;
+    white-space: pre;
+    line-height: 1.8;
+    margin: 8px;
+    border-radius: 6px;
+    overflow: auto;
+    height: calc(100% - 16px);
+    direction: rtl;
+    text-align: right;
+  }
+
+  /* ---------- توزیع احتمال ---------- */
+  .prob-container {
+    padding: 18px;
+    overflow: auto;
+    height: 100%;
+  }
+  .prob-title {
+    color: #00e0b0;
+    font-size: 18px;
+    margin-bottom: 18px;
+    text-align: center;
+    font-weight: bold;
+  }
+  .prob-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 13px;
+    direction: rtl;
+    background: #111;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 15px;
+  }
+  .prob-table th {
+    background: #2b2b2b;
+    color: #00e0b0;
+    padding: 13px 8px;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid #00e0b0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .prob-table td {
+    padding: 11px 8px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    color: #ddd;
+    font-size: 13px;
+  }
+  .prob-table tr:hover { background: #181818; }
+  .prob-table tr.win-row { background: rgba(11, 61, 46, 0.3); }
+  .prob-table tr.loss-row { background: rgba(74, 20, 20, 0.3); }
+  .prob-table tr.highlight { background: #0a1f1a; font-weight: bold; }
+  .prob-bar-container {
+    display: inline-block;
+    width: 130px;
+    height: 16px;
+    background: #222;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    vertical-align: middle;
+  }
+  .prob-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00b894, #00e0b0);
+    border-radius: 8px;
+    transition: width 0.3s;
+  }
+  .prob-bar.neg {
+    background: linear-gradient(90deg, #8b2a2a, #ff6b6b);
+  }
+  .prob-summary-card {
+    background: #0a1f1a;
+    border-right: 4px solid #00e0b0;
+    padding: 14px 20px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    color: #ddd;
+    font-size: 14px;
+    line-height: 2;
+  }
+  .prob-summary-card strong { color: #00e0b0; }
+
+  .cdf-row-good { background: rgba(11, 61, 46, 0.4); }
+  .cdf-row-warn { background: rgba(74, 74, 20, 0.4); }
+  .cdf-row-bad  { background: rgba(74, 20, 20, 0.4); }
+
+  .threshold-badge {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+  .threshold-badge.ok { background: #0b3d2e; color: #7dffb0; }
+  .threshold-badge.warn { background: #3d3d1f; color: #ffcc66; }
+  .threshold-badge.danger { background: #4a1414; color: #ff8888; }
+  .threshold-badge.info { background: #1f2e3d; color: #7db8ff; }
+
+  /* ---------- ارزیابی حرفه‌ای ---------- */
+  .eval-container {
+    padding: 20px;
+    overflow: auto;
+    height: 100%;
+  }
+  .eval-title {
+    color: #00e0b0;
+    font-size: 18px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: bold;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #00e0b0;
+  }
+  .eval-summary-box {
+    background: #0a1f1a;
+    border-right: 5px solid #00e0b0;
+    padding: 18px 24px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    color: #ddd;
+    font-size: 15px;
+    line-height: 2.1;
+  }
+  .eval-summary-box.warn {
+    background: #2a1a0a;
+    border-right-color: #ffb86b;
+  }
+  .eval-summary-box.danger {
+    background: #2a0a0a;
+    border-right-color: #ff6b6b;
+  }
+  .eval-summary-box.good {
+    background: #0a1f1a;
+    border-right-color: #7dffb0;
+  }
+  .eval-summary-box strong {
+    color: #00e0b0;
+    font-size: 16px;
+  }
+  .eval-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 14px;
+    direction: rtl;
+    background: #111;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .eval-table th {
+    background: #2b2b2b;
+    color: #00e0b0;
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid #00e0b0;
+  }
+  .eval-table td {
+    padding: 12px 8px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    color: #ddd;
+    font-size: 14px;
+  }
+  .eval-table tr:hover { background: #181818; }
+  .eval-cell-green { color: #7dffb0 !important; font-weight: bold; }
+  .eval-cell-yellow { color: #ffcc66 !important; font-weight: bold; }
+  .eval-cell-red { color: #ff6b6b !important; font-weight: bold; }
+
+  .eval-verdict {
+    font-size: 19px;
+    font-weight: bold;
+    padding: 20px 24px;
+    border-radius: 8px;
+    text-align: center;
+    margin: 22px 0;
+    border: 2px solid;
+  }
+  .eval-verdict.good {
+    background: rgba(11, 61, 46, 0.4);
+    border-color: #7dffb0;
+    color: #7dffb0;
+  }
+  .eval-verdict.warn {
+    background: rgba(74, 74, 20, 0.4);
+    border-color: #ffcc66;
+    color: #ffcc66;
+  }
+  .eval-verdict.bad {
+    background: rgba(74, 20, 20, 0.4);
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+  }
+
+  .eval-ranges {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .eval-range-card {
+    background: #111;
+    border-radius: 8px;
+    padding: 14px;
+    border: 2px solid #333;
+  }
+  .eval-range-card.conservative { border-color: #7dffb0; }
+  .eval-range-card.balanced { border-color: #55aaff; }
+  .eval-range-card.aggressive { border-color: #ffcc66; }
+  .eval-range-card.dangerous { border-color: #ff6b6b; }
+  .eval-range-title {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+  }
+  .eval-range-row {
+    font-size: 12.5px;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .eval-range-row .value {
+    font-weight: bold;
+    font-family: 'Tahoma', sans-serif;
+  }
+  .eval-range-amount {
+    font-size: 11.5px;
+    color: #999;
+    padding: 0 0 6px 0;
+    text-align: left;
+    direction: rtl;
+    font-family: 'Tahoma', sans-serif;
+  }
+
+  /* ---------- راهنما ---------- */
+  .help-content {
+    background: #111;
+    color: #eee;
+    font-family: 'Tahoma', sans-serif;
+    font-size: 14px;
+    padding: 22px 28px;
+    line-height: 2;
+    margin: 8px;
+    border-radius: 6px;
+    overflow: auto;
+    height: calc(100% - 16px);
+    direction: rtl;
+    text-align: right;
+  }
+  .help-content h2 {
+    color: #00e0b0;
+    font-size: 19px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #00e0b0;
+  }
+  .help-content h3 {
+    color: #ffb86b;
+    font-size: 16px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .help-content p { margin-bottom: 12px; }
+  .help-content ul { padding-right: 25px; margin-bottom: 12px; }
+  .help-content li { margin-bottom: 8px; }
+  .help-content code {
+    background: #1f2e3d;
+    color: #7dffb0;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+  }
+  .help-content .box {
+    background: #0a1f1a;
+    border-right: 4px solid #00e0b0;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 6px;
+  }
+  .help-content .box-warn {
+    background: #2a1a0a;
+    border-right-color: #ffb86b;
+  }
+  .help-content .box-danger {
+    background: #2a0a0a;
+    border-right-color: #ff6b6b;
+  }
+  .help-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .help-content th {
+    background: #2b2b2b;
+    color: #00e0b0;
+    padding: 10px;
+    text-align: right;
+    border: 1px solid #333;
+  }
+  .help-content td {
+    padding: 10px;
+    border: 1px solid #333;
+  }
+  .help-content tr:nth-child(even) { background: #181818; }
+
+  .status {
+    padding: 10px 14px;
+    background: #111;
+    color: #00e0b0;
+    font-size: 12.5px;
+    text-align: center;
+    border-top: 1px solid #333;
+    font-weight: bold;
+  }
+
+  .designer-bar {
+    background: linear-gradient(90deg, #0a1f1a, #111, #0a1f1a);
+    color: #aaaaaa;
+    font-size: 11.5px;
+    padding: 8px 16px;
+    text-align: center;
+    border-top: 1px solid #00e0b0;
+    font-family: 'Tahoma', sans-serif;
+    letter-spacing: 0.5px;
+  }
+  .designer-bar .name {
+    color: #00e0b0;
+    font-weight: bold;
+    font-size: 12.5px;
+  }
+  .designer-bar .role {
+    color: #ffb86b;
+    font-size: 11px;
+    margin: 0 6px;
+  }
+  .designer-bar .phone {
+    color: #7dffb0;
+    font-weight: bold;
+    font-family: 'Consolas', monospace;
+    direction: ltr;
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 12.5px;
+  }
+  .designer-bar .separator {
+    color: #444;
+    margin: 0 8px;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: #1e1e1e; }
+
+  @media (max-width: 1100px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; max-height: 45vh; }
+    .eval-ranges { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <h1>⚙ پارامترهای ورودی</h1>
+
+    <div class="lock-row">
+      <div class="row">
+        <label>🔒 حالت قفل</label>
+        <select id="lockMode">
+          <option value="risk_amt">1️⃣ Risk $ (مبلغ ضرر)</option>
+          <option value="risk_pct">2️⃣ Risk % (درصد)</option>
+          <option value="max_loss">6️⃣ حداکثر ضرر کل ★</option>
+          <option value="pos">3️⃣ Position Size</option>
+          <option value="stop">4️⃣ Stop Price</option>
+          <option value="entry">5️⃣ Entry Price</option>
+        </select>
+      </div>
+      <div class="lock-hint" id="lockHint">حداکثر ضرر کل → Risk% از فرمول نمایی</div>
+    </div>
+
+    <div class="row">
+      <label>واحد پول</label>
+      <select id="currency">
+        <option value="IRT">IRT (تومان)</option>
+        <option value="IRR">IRR (ریال)</option>
+        <option value="USD">USD ($)</option>
+        <option value="EUR">EUR (€)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>سرمایه اولیه</label>
+      <input type="text" id="initialCapital" value="۵۰۰,۰۰۰,۰۰۰">
+    </div>
+    <div class="row">
+      <label>تعداد معاملات</label>
+      <input type="text" id="nTrades" value="۱۰">
+    </div>
+    <div class="row">
+      <label>Win Rate (%)</label>
+      <input type="text" id="winRate" value="۵۰">
+    </div>
+    <div class="row">
+      <label>تعداد شبیه‌سازی</label>
+      <input type="text" id="nSims" value="۲,۰۰۰">
+    </div>
+
+    <div class="section-title blue">─── 💹 قیمت‌ها ───</div>
+    <div class="row field-entry">
+      <label>قیمت ورود (Entry)</label>
+      <input type="text" id="entryPrice" value="۱,۲۵۰,۰۰۰">
+    </div>
+    <div class="row field-stop">
+      <label>قیمت استاپ (Stop)</label>
+      <input type="text" id="stopPrice" value="۱,۲۳۵,۰۰۰">
+    </div>
+    <div class="row field-tp">
+      <label>قیمت هدف (TP)</label>
+      <input type="text" id="tpPrice" value="۱,۲۹۵,۰۰۰">
+    </div>
+    <div class="row">
+      <label>ارزش هر واحد</label>
+      <input type="text" id="pipValue" value="۱.۰">
+    </div>
+    <div class="row field-rr">
+      <label>R:R هدف (خودکار TP)</label>
+      <input type="text" id="rrTarget" value="۳.۰">
+    </div>
+
+    <div class="section-title purple">─── 💰 مدیریت ریسک ───</div>
+    <div class="row field-riskamt">
+      <label>مبلغ ضرر (Risk $)</label>
+      <input type="text" id="riskAmt" value="۵,۰۰۰,۰۰۰">
+    </div>
+    <div class="row field-riskpct">
+      <label>Risk (%)</label>
+      <input type="text" id="riskPct" value="۱.۰">
+    </div>
+    <div class="row field-maxloss">
+      <label>حداکثر ضرر کل</label>
+      <input type="text" id="maxLoss" value="۵۰,۰۰۰,۰۰۰">
+    </div>
+    <div class="row field-pos">
+      <label>Position Size</label>
+      <input type="text" id="posSize" value="۳۳۳.۳۳">
+    </div>
+
+    <div class="section-title yellow">─── 💸 کمیسیون ───</div>
+    <div class="row field-comm">
+      <label>کمیسیون هر معامله (%)</label>
+      <input type="text" id="commissionPct" value="۰.۵">
+    </div>
+
+    <div class="section-title pink">─── 💰 حالت سود ───</div>
+    <div class="row field-mode">
+      <label>حالت سود</label>
+      <select id="profitMode">
+        <option value="compound">📈 Compound (ترکیبی)</option>
+        <option value="lock">💰 Profit Lock (خروج سود)</option>
+      </select>
+    </div>
+    <div class="lock-hint" id="profitModeHint">
+      سود به سرمایه اضافه می‌شود و در معامله بعدی شرکت می‌کند
+    </div>
+
+    <div class="section-title gray">─── 🧮 محاسبه‌شده ───</div>
+    <div class="row field-computed">
+      <label>فاصله استاپ</label>
+      <input type="text" id="stopDistance" readonly>
+    </div>
+    <div class="row field-computed">
+      <label>فاصله هدف</label>
+      <input type="text" id="rewardDistance" readonly>
+    </div>
+    <div class="row field-computed">
+      <label>نسبت R:R</label>
+      <input type="text" id="rrComputed" readonly>
+    </div>
+    <div class="row field-computed">
+      <label>کمیسیون هر معامله</label>
+      <input type="text" id="commissionAmtComputed" readonly>
+    </div>
+
+    <div class="section-title teal">─── 👁 پیش‌نمایش لحظه‌ای ───</div>
+    <div class="preview">
+      <div class="preview-row">
+        <span class="label">🛑 ضرر بالقوه:</span>
+        <span class="value" id="previewLoss">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">🎯 سود بالقوه:</span>
+        <span class="value" id="previewProfit">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">📊 درصد ریسک:</span>
+        <span class="value" id="previewRiskPct">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">⚖️ نسبت R:R:</span>
+        <span class="value" id="previewRR">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">🔻 حداکثر ضرر کل:</span>
+        <span class="value" id="previewMaxLoss">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">💸 کمیسیون هر معامله:</span>
+        <span class="value" id="previewCommission">—</span>
+      </div>
+      <div class="preview-row" style="border-top:1px solid #00e0b0; margin-top:6px; padding-top:8px;">
+        <span class="label">💰 حالت سود:</span>
+        <span class="value pct-cyan" id="previewProfitMode">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">🎲 احتمال حداکثر ضرر:</span>
+        <span class="value" id="previewMaxLossProb">—</span>
+      </div>
+      <div class="preview-row">
+        <span class="label">📉 حداکثر ضرر ۹۵٪ اطمینان:</span>
+        <span class="value" id="previewMaxLoss95">—</span>
+      </div>
+    </div>
+
+    <button class="primary" id="btnRun">▶ اجرای شبیه‌سازی</button>
+    <button class="secondary" id="btnReset">↺ پاک‌سازی</button>
+
+    <div class="row" style="margin-top:12px;">
+      <label>مسیر جدول</label>
+      <select id="pathMode">
+        <option value="median">Median (میانه)</option>
+        <option value="worst">Worst (بدترین)</option>
+        <option value="best">Best (بهترین)</option>
+        <option value="random">Random (تصادفی)</option>
+      </select>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tabs">
+      <button class="tab active" data-tab="equity">📈 Equity</button>
+      <button class="tab" data-tab="dd">📉 Drawdown</button>
+      <button class="tab" data-tab="trades">📋 جدول</button>
+      <button class="tab" data-tab="prob">🎲 توزیع احتمال</button>
+      <button class="tab" data-tab="eval">🎯 ارزیابی حرفه‌ای</button>
+      <button class="tab" data-tab="report">📄 گزارش</button>
+      <button class="tab" data-tab="help">❓ راهنما</button>
+    </div>
+
+    <div class="tab-content">
+      <div class="panel active" id="panel-equity">
+        <div class="hl-bar">
+          <span class="label">🔍 برجسته‌سازی تریدر:</span>
+          <button class="hl-btn active" data-hl="none" style="background:#444;">هیچ‌کدام</button>
+          <button class="hl-btn" data-hl="worst" style="background:#8b2a2a;">😰 بدشانس‌ترین</button>
+          <button class="hl-btn" data-hl="best" style="background:#1e6b4a;">🍀 خوش‌شانس‌ترین</button>
+          <button class="hl-btn" data-hl="median" style="background:#8b6b2a;">📊 میانه</button>
+          <button class="hl-btn" data-hl="random" style="background:#2a4a8b;">🎲 تصادفی</button>
+        </div>
+        <div class="chart-box" id="chartEquity" style="height:43%"></div>
+        <div class="chart-box" id="chartDist" style="height:43%"></div>
+      </div>
+      <div class="panel" id="panel-dd">
+        <div class="chart-box" id="chartDD" style="height:calc(100% - 12px)"></div>
+      </div>
+      <div class="panel" id="panel-trades">
+        <div class="table-wrapper">
+          <table class="trades" id="tradesTable">
+            <thead>
+              <tr>
+                <th>#</th><th>نتیجه</th><th>پایه</th><th>سود معامله</th><th>برداشت تجمعی</th>
+                <th>کل</th><th>Peak</th><th>DD%</th>
+                <th>Risk</th><th>Pos</th><th>کمیسیون</th>
+                <th>R-Mult</th><th>P/L</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" id="panel-prob">
+        <div class="prob-container">
+          <div class="prob-title">🎲 توزیع احتمال سناریوهای مختلف</div>
+          <div id="probSummary"></div>
+          <div id="probExtraSummary" style="margin-top:10px;"></div>
+
+          <div class="chart-box" id="chartCDF" style="height:340px; margin-top:20px;"></div>
+
+          <h3 style="color:#00e0b0; font-size:16px; margin:22px 0 10px; text-align:center;">
+            📈 احتمال تجمعی (حداقل X برد)
+          </h3>
+          <table class="prob-table" id="cdfTable">
+            <thead>
+              <tr>
+                <th>حداقل چند برد</th>
+                <th>احتمال (٪)</th>
+                <th>تفسیر</th>
+                <th>نمودار</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <h3 style="color:#00e0b0; font-size:16px; margin:22px 0 10px; text-align:center;">
+            📊 توزیع دقیق (دقیقاً X برد)
+          </h3>
+          <table class="prob-table" id="probTable">
+            <thead>
+              <tr>
+                <th>سناریو</th>
+                <th>تعداد برد</th>
+                <th>احتمال (٪)</th>
+                <th>سرمایه تخمینی</th>
+                <th>سود / ضرر</th>
+                <th>نمودار احتمال</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" id="panel-eval">
+        <div class="eval-container">
+          <div class="eval-title">🎯 ارزیابی حرفه‌ای تنظیمات</div>
+          <div id="evalSummary"></div>
+          <div id="evalChart"></div>
+        </div>
+      </div>
+      <div class="panel" id="panel-report">
+        <div class="report" id="reportText">— برای دیدن گزارش، شبیه‌سازی را اجرا کنید —</div>
+      </div>
+      <div class="panel" id="panel-help">
+        <div class="help-content" id="helpText"></div>
+      </div>
+    </div>
+
+    <div class="status" id="statusBar">آماده</div>
+    <div class="designer-bar">
+      <span class="name">مدیریت ریسک و سرمایه: مهندس محمدامین ناظم</span>
+      <span class="separator">|</span>
+      <span class="role">طراح و مدیر:</span>
+      <span class="phone">009224957723</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// =========================================================
+//  ابزارهای تبدیل اعداد
+// =========================================================
+const $ = id => document.getElementById(id);
+
+const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+const ARABIC_DIGITS  = '٠١٢٣٤٥٦٧٨٩';
+
+function toEnglishDigits(str) {
+  return String(str).replace(/[۰-۹٠-٩]/g, ch => {
+    let idx = PERSIAN_DIGITS.indexOf(ch);
+    if (idx !== -1) return idx;
+    idx = ARABIC_DIGITS.indexOf(ch);
+    if (idx !== -1) return idx;
+    return ch;
+  });
+}
+
+function toPersianDigits(str) {
+  return String(str).replace(/[0-9]/g, d => PERSIAN_DIGITS[+d]);
+}
+
+function fmtFa(n, dec = 0) {
+  if (!isFinite(n)) return '—';
+  const parts = Number(n).toFixed(dec).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const result = parts.join('.');
+  return toPersianDigits(result);
+}
+
+function num(v) {
+  const s = toEnglishDigits(String(v).replace(/,/g, '').replace(/—/g, '').trim());
+  const x = parseFloat(s);
+  return isNaN(x) ? 0 : x;
+}
+
+function formatLiveInput(input) {
+  const cursorPos = input.selectionStart;
+  const oldLen = input.value.length;
+
+  let raw = toEnglishDigits(input.value);
+  raw = raw.replace(/,/g, '');
+
+  const hasDecimal = raw.includes('.');
+  let [intPart, decPart] = raw.split('.');
+
+  intPart = (intPart || '').replace(/[^\d]/g, '');
+  decPart = decPart !== undefined ? decPart.replace(/[^\d]/g, '').slice(0, 4) : undefined;
+
+  const isNeg = raw.trim().startsWith('-');
+
+  let formattedInt = intPart;
+  if (intPart.length > 0) {
+    formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  let result = (isNeg ? '-' : '') + formattedInt;
+  if (decPart !== undefined) {
+    result += '.' + decPart;
+  }
+
+  result = toPersianDigits(result);
+
+  const newLen = result.length;
+  const delta = newLen - oldLen;
+  input.value = result;
+  const newPos = Math.max(0, cursorPos + delta);
+  try {
+    input.setSelectionRange(newPos, newPos);
+  } catch (e) {}
+}
+
+function sym() {
+  return { USD: '$', IRR: '﷼', IRT: 'ت', EUR: '€' }[$('currency').value] || '';
+}
+
+let lastRun = null;
+let highlightMode = 'none';
+let highlightedIdx = -1;
+
+// =========================================================
+//  هینت‌های حالت قفل
+// =========================================================
+const LOCK_HINTS = {
+  risk_amt: 'مبلغ ضرر → Position و Risk% خودکار',
+  risk_pct: 'درصد ریسک → Position و مبلغ ضرر خودکار',
+  max_loss: 'حداکثر ضرر کل → Risk% از فرمول نمایی محاسبه می‌شود',
+  pos:      'Position → Risk% و مبلغ ضرر خودکار',
+  stop:     'قیمت استاپ → Position از Risk% فعلی',
+  entry:    'قیمت ورود → Position از Risk% فعلی',
+};
+
+const PROFIT_HINTS = {
+  compound: 'سود به سرمایه اضافه می‌شود و در معامله بعدی شرکت می‌کند',
+  lock:     'سود از معامله خارج می‌شود (بالانس پایه ثابت می‌ماند)',
+};
+
+function applyFieldStates() {
+  const lock = $('lockMode').value;
+  $('lockHint').textContent = LOCK_HINTS[lock] || '';
+
+  ['posSize', 'riskPct', 'riskAmt', 'maxLoss',
+   'stopPrice', 'entryPrice'].forEach(id => { $(id).readOnly = false; });
+
+  const riskFields = {
+    posSize: 'pos',
+    riskPct: 'risk_pct',
+    riskAmt: 'risk_amt',
+    maxLoss: 'max_loss',
+  };
+  Object.entries(riskFields).forEach(([id, key]) => {
+    if (key !== lock) $(id).readOnly = true;
+  });
+
+  if (lock === 'stop')  $('stopPrice').readOnly = true;
+  if (lock === 'entry') $('entryPrice').readOnly = true;
+}
+
+// =========================================================
+//  توزیع باینومیال
+// =========================================================
+function binomialProbability(n, k, p) {
+  if (k < 0 || k > n) return 0;
+  let coeff = 1;
+  for (let i = 0; i < k; i++) {
+    coeff = coeff * (n - i) / (i + 1);
+  }
+  return coeff * Math.pow(p, k) * Math.pow(1 - p, n - k);
+}
+
+function computeCDFData(n, wr) {
+  const result = [];
+  for (let k = 0; k <= n; k++) {
+    let cumulative = 0;
+    for (let wins = k; wins <= n; wins++) {
+      cumulative += binomialProbability(n, wins, wr);
+    }
+    result.push({
+      minWins: k,
+      prob: cumulative
+    });
+  }
+  return result;
+}
+
+function calculateMaxLossAtConfidence(cap, riskPct, n, confidence, wr, stopD, pv, entryPrice, commPct, rr) {
+  const scenarios = [];
+  for (let wins = 0; wins <= n; wins++) {
+    const losses = n - wins;
+    const prob = binomialProbability(n, wins, wr);
+
+    let finalCap = cap;
+    for (let i = 0; i < wins; i++) {
+      const risk = finalCap * riskPct;
+      const comm = (stopD > 0 && pv > 0) ? (risk / (stopD * pv)) * entryPrice * commPct : 0;
+      finalCap += risk * rr - comm;
+    }
+    for (let i = 0; i < losses; i++) {
+      const risk = finalCap * riskPct;
+      const comm = (stopD > 0 && pv > 0) ? (risk / (stopD * pv)) * entryPrice * commPct : 0;
+      finalCap = Math.max(0, finalCap - risk - comm);
+    }
+
+    scenarios.push({ wins, losses, prob, finalCap });
+  }
+
+  scenarios.sort((a, b) => a.finalCap - b.finalCap);
+
+  let cumulative = 0;
+  for (const s of scenarios) {
+    cumulative += s.prob;
+    if (cumulative >= (1 - confidence)) {
+      return Math.abs(cap - s.finalCap);
+    }
+  }
+  return Math.abs(cap - scenarios[scenarios.length - 1].finalCap);
+}
+
+// =========================================================
+//  محاسبه زنده
+// =========================================================
+function recompute(source = 'edit') {
+  const cap   = num($('initialCapital').value);
+  const pv    = num($('pipValue').value) || 1;
+  const entry = num($('entryPrice').value);
+  const stop  = num($('stopPrice').value);
+  const tp    = num($('tpPrice').value);
+
+  if (cap <= 0 || entry <= 0) return;
+
+  const stopD = stop > 0 ? Math.abs(entry - stop) : 0;
+  const rwdD  = tp > 0   ? Math.abs(tp - entry)   : 0;
+  const rr    = stopD > 0 ? rwdD / stopD : 0;
+
+  const lock = $('lockMode').value;
+  const nTrades = Math.max(1, Math.floor(num($('nTrades').value)));
+
+  if (lock === 'risk_amt') {
+    const riskAmt = num($('riskAmt').value);
+    const riskPct = cap > 0 ? riskAmt / cap * 100 : 0;
+    const pos     = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+    $('riskPct').value = toPersianDigits(riskPct.toFixed(4));
+    $('posSize').value = fmtFa(pos, 4);
+    const worstFinal = cap * Math.pow(1 - riskPct / 100, nTrades);
+    $('maxLoss').value = fmtFa(cap - worstFinal, 0);
+
+  } else if (lock === 'risk_pct') {
+    const riskPct = num($('riskPct').value);
+    const riskAmt = cap * riskPct / 100;
+    const pos     = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+    $('riskAmt').value = fmtFa(riskAmt, 0);
+    $('posSize').value = fmtFa(pos, 4);
+    const worstFinal = cap * Math.pow(1 - riskPct / 100, nTrades);
+    $('maxLoss').value = fmtFa(cap - worstFinal, 0);
+
+  } else if (lock === 'max_loss') {
+    let maxLoss = num($('maxLoss').value);
+    if (maxLoss >= cap) maxLoss = cap * 0.99;
+    if (maxLoss < 0) maxLoss = 0;
+
+    const ratio = maxLoss / cap;
+    const riskRatio = 1 - Math.pow(1 - ratio, 1 / nTrades);
+    const riskPct = riskRatio * 100;
+    const riskAmt = cap * riskRatio;
+    const pos     = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+
+    $('riskPct').value = toPersianDigits(riskPct.toFixed(4));
+    $('riskAmt').value = fmtFa(riskAmt, 0);
+    $('posSize').value = fmtFa(pos, 4);
+
+  } else if (lock === 'pos') {
+    const pos     = num($('posSize').value);
+    const riskAmt = pos * stopD * pv;
+    const riskPct = cap > 0 ? riskAmt / cap * 100 : 0;
+    $('riskAmt').value = fmtFa(riskAmt, 0);
+    $('riskPct').value = toPersianDigits(riskPct.toFixed(4));
+    const worstFinal = cap * Math.pow(1 - riskPct / 100, nTrades);
+    $('maxLoss').value = fmtFa(cap - worstFinal, 0);
+
+  } else if (lock === 'stop') {
+    const riskPct = num($('riskPct').value);
+    const riskAmt = cap * riskPct / 100;
+    const pos     = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+    $('riskAmt').value = fmtFa(riskAmt, 0);
+    $('posSize').value = fmtFa(pos, 4);
+    const worstFinal = cap * Math.pow(1 - riskPct / 100, nTrades);
+    $('maxLoss').value = fmtFa(cap - worstFinal, 0);
+
+  } else if (lock === 'entry') {
+    const riskPct = num($('riskPct').value);
+    const riskAmt = cap * riskPct / 100;
+    const pos     = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+    $('riskAmt').value = fmtFa(riskAmt, 0);
+    $('posSize').value = fmtFa(pos, 4);
+    const worstFinal = cap * Math.pow(1 - riskPct / 100, nTrades);
+    $('maxLoss').value = fmtFa(cap - worstFinal, 0);
+  }
+
+  $('stopDistance').value   = stopD > 0 ? fmtFa(stopD, 0) : '—';
+  $('rewardDistance').value = rwdD  > 0 ? fmtFa(rwdD, 0)  : '—';
+  $('rrComputed').value     = rr > 0 ? toPersianDigits(rr.toFixed(4)) : '—';
+
+  const commPct = num($('commissionPct').value);
+  const posSizeVal = num($('posSize').value);
+  const commissionAmt = posSizeVal * entry * (commPct / 100);
+  $('commissionAmtComputed').value =
+    commissionAmt > 0 ? fmtFa(commissionAmt, 0) : '—';
+
+  const riskAmtFinal = num($('riskAmt').value);
+  const riskPctFinal = num($('riskPct').value);
+  const profit = riskAmtFinal * rr;
+  const s = sym();
+
+  $('previewLoss').innerHTML     = '<span class="pct-red">− ' + fmtFa(riskAmtFinal, 0) + ' ' + s + '</span>';
+  $('previewProfit').innerHTML   = '<span class="pct-green">+ ' + fmtFa(profit, 0) + ' ' + s + '</span>';
+  $('previewRiskPct').innerHTML  = '<span class="pct-orange">' + toPersianDigits(riskPctFinal.toFixed(4)) + '٪</span>';
+  $('previewRR').innerHTML       = '<span class="pct-purple">' + (rr > 0 ? '۱ : ' + toPersianDigits(rr.toFixed(2)) : '—') + '</span>';
+
+  const riskRatio = riskPctFinal / 100;
+  if (riskRatio > 0 && riskRatio < 1) {
+    const worstFinal  = cap * Math.pow(1 - riskRatio, nTrades);
+    const maxLossAmt  = cap - worstFinal;
+    const maxLossPct  = (1 - Math.pow(1 - riskRatio, nTrades)) * 100;
+    $('previewMaxLoss').innerHTML =
+      '<span class="pct-red">− ' + fmtFa(maxLossAmt, 0) + ' ' + s + '</span>' +
+      '  <span class="pct-red">(' + toPersianDigits(maxLossPct.toFixed(2)) + '٪)</span>';
+  } else {
+    $('previewMaxLoss').textContent = '—';
+  }
+
+  if (commPct > 0 && commissionAmt > 0) {
+    $('previewCommission').innerHTML =
+      '<span class="pct-yellow">− ' + fmtFa(commissionAmt, 0) + ' ' + s + '</span>' +
+      '  <span class="pct-yellow">(' + toPersianDigits(commPct.toFixed(2)) + '٪)</span>';
+  } else {
+    $('previewCommission').textContent = '—';
+  }
+
+  const profitMode = $('profitMode').value;
+  $('previewProfitMode').textContent =
+    profitMode === 'lock' ? '💰 Profit Lock' : '📈 Compound';
+  $('profitModeHint').textContent = PROFIT_HINTS[profitMode] || '';
+
+  const wr = num($('winRate').value) / 100;
+  const maxLossProb = Math.pow(1 - wr, nTrades);
+  $('previewMaxLossProb').innerHTML =
+    '<span class="pct-yellow">' + toPersianDigits((maxLossProb * 100).toFixed(4)) + '٪</span>';
+
+  const p95Loss = calculateMaxLossAtConfidence(
+    cap, riskPctFinal / 100, nTrades, 0.95,
+    wr, stopD, pv, entry, commPct / 100, rr
+  );
+  $('previewMaxLoss95').innerHTML =
+    '<span class="pct-red">− ' + fmtFa(p95Loss, 0) + ' ' + s + '</span>' +
+    '  <span class="pct-red">(' + toPersianDigits((p95Loss/cap*100).toFixed(2)) + '٪)</span>';
+
+  if (lastRun) {
+    renderEvaluation();
+  }
+}
+
+// =========================================================
+//  R:R هدف → TP خودکار
+// =========================================================
+function onRRTargetChange() {
+  const rrT   = num($('rrTarget').value);
+  const entry = num($('entryPrice').value);
+  const stop  = num($('stopPrice').value);
+  if (entry > 0 && stop > 0 && rrT > 0) {
+    const stopD = Math.abs(entry - stop);
+    const newTP = stop < entry ? entry + stopD * rrT : entry - stopD * rrT;
+    $('tpPrice').value = fmtFa(newTP, 0);
+    recompute('edit');
+  }
+}
+
+// =========================================================
+//  رویدادها
+// =========================================================
+$('lockMode').addEventListener('change', () => {
+  applyFieldStates();
+  recompute('mode');
+});
+$('currency').addEventListener('change', () => recompute('passive'));
+$('profitMode').addEventListener('change', () => {
+  $('profitModeHint').textContent = PROFIT_HINTS[$('profitMode').value] || '';
+  recompute('mode');
+});
+
+const NUMBER_FIELDS = [
+  'initialCapital', 'nTrades', 'nSims',
+  'entryPrice', 'stopPrice', 'tpPrice', 'pipValue',
+  'riskAmt', 'maxLoss', 'posSize'
+];
+
+NUMBER_FIELDS.forEach(id => {
+  const el = $(id);
+  el.addEventListener('input', (e) => {
+    formatLiveInput(e.target);
+    recompute('edit');
+  });
+});
+
+['riskPct', 'winRate', 'rrTarget', 'commissionPct'].forEach(id => {
+  const el = $(id);
+  el.addEventListener('input', (e) => {
+    const cursorPos = e.target.selectionStart;
+    let newVal = toEnglishDigits(e.target.value).replace(/[^\d.\-]/g, '');
+    newVal = toPersianDigits(newVal);
+    if (e.target.value !== newVal) {
+      e.target.value = newVal;
+      e.target.setSelectionRange(cursorPos, cursorPos);
+    }
+    if (id === 'rrTarget') onRRTargetChange();
+    else recompute('edit');
+  });
+});
+
+$('btnRun').addEventListener('click', runSimulation);
+$('btnReset').addEventListener('click', resetAll);
+$('pathMode').addEventListener('change', refreshTable);
+
+// =========================================================
+//  دکمه‌های برجسته‌سازی
+// =========================================================
+document.querySelectorAll('.hl-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.hl-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    highlightMode = btn.dataset.hl;
+    setHighlightedTrader();
+    if (lastRun) {
+      plotEquity(lastRun.paths, lastRun.cap);
+    }
+  });
+});
+
+function setHighlightedTrader() {
+  if (!lastRun || highlightMode === 'none') {
+    highlightedIdx = -1;
+    return;
+  }
+  const finals = lastRun.paths.map(p => p[p.length - 1]);
+  const sortedIdx = finals.map((_, i) => i).sort((a, b) => finals[a] - finals[b]);
+
+  if (highlightMode === 'worst') {
+    highlightedIdx = sortedIdx[0];
+  } else if (highlightMode === 'best') {
+    highlightedIdx = sortedIdx[sortedIdx.length - 1];
+  } else if (highlightMode === 'median') {
+    highlightedIdx = sortedIdx[Math.floor(sortedIdx.length / 2)];
+  } else if (highlightMode === 'random') {
+    highlightedIdx = Math.floor(Math.random() * lastRun.paths.length);
+  } else {
+    highlightedIdx = -1;
+  }
+}
+
+// =========================================================
+//  شبیه‌سازی
+// =========================================================
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return function () {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function runSimulation() {
+  const cap      = num($('initialCapital').value);
+  const nTrades  = Math.max(1, Math.floor(num($('nTrades').value)));
+  const winRate  = num($('winRate').value) / 100;
+  const nSims    = Math.max(10, Math.min(20000, Math.floor(num($('nSims').value))));
+  const riskPct  = num($('riskPct').value) / 100;
+  const rr       = num($('rrComputed').value);
+  const stopD    = num($('stopDistance').value);
+  const pv       = num($('pipValue').value) || 1;
+  const commPct  = num($('commissionPct').value) / 100;
+  const entryPrice = num($('entryPrice').value);
+  const profitMode = $('profitMode').value;
+
+  if (cap <= 0)  { alert('سرمایه باید مثبت باشد'); return; }
+  if (riskPct <= 0 || riskPct > 1) { alert('درصد ریسک باید بین ۰ و ۱۰۰ باشد'); return; }
+  if (rr <= 0)   { alert('R:R باید مثبت باشد'); return; }
+
+  $('statusBar').textContent = '⏳ در حال شبیه‌سازی...';
+  setTimeout(() => {
+    const t0 = performance.now();
+    const rng = seededRandom(42);
+
+    const paths = [];
+    const basePaths = [];
+    const withdrawnPaths = [];
+    const wins = [];
+    const commissions = [];
+    const rMultiples = [];
+
+    for (let s = 0; s < nSims; s++) {
+      const eq = new Float64Array(nTrades + 1);
+      const baseEq = new Float64Array(nTrades + 1);
+      const wdEq = new Float64Array(nTrades + 1);
+
+      eq[0] = cap;
+      baseEq[0] = cap;
+      wdEq[0] = 0;
+
+      const w = new Uint8Array(nTrades);
+      let totalComm = 0;
+      let withdrawn = 0;
+      let baseBalance = cap;
+      let sumR = 0;
+      let countedTrades = 0;
+
+      for (let i = 0; i < nTrades; i++) {
+        const c = baseBalance;
+        if (c <= 0) {
+          eq[i + 1] = withdrawn;
+          baseEq[i + 1] = 0;
+          wdEq[i + 1] = withdrawn;
+          w[i] = 0;
+          continue;
+        }
+
+        const r = c * riskPct;
+        const posSize = stopD > 0 ? r / (stopD * pv) : 0;
+        const commission = posSize * entryPrice * commPct;
+        totalComm += commission;
+
+        const won = rng() < winRate;
+        w[i] = won ? 1 : 0;
+
+        let plThisTrade = 0;
+
+        if (won) {
+          const grossProfit = r * rr;
+          const netProfit = grossProfit - commission;
+          plThisTrade = netProfit;
+
+          if (profitMode === 'lock') {
+            withdrawn += Math.max(0, netProfit);
+            baseBalance = c;
+          } else {
+            baseBalance = c + netProfit;
+          }
+        } else {
+          plThisTrade = -(r + commission);
+          baseBalance = Math.max(0, c - r - commission);
+        }
+
+        const rMult = r > 0 ? (plThisTrade / r) : 0;
+        sumR += rMult;
+        countedTrades++;
+
+        baseEq[i + 1] = baseBalance;
+        wdEq[i + 1] = withdrawn;
+        eq[i + 1] = baseBalance + withdrawn;
+      }
+
+      paths.push(eq);
+      basePaths.push(baseEq);
+      withdrawnPaths.push(wdEq);
+      wins.push(w);
+      commissions.push(totalComm);
+      rMultiples.push(countedTrades > 0 ? sumR / countedTrades : 0);
+    }
+
+    const t1 = performance.now();
+    const stats = computeStats(paths, cap);
+    const ddStats = computeDDStats(paths);
+
+    const avgCommission = commissions.reduce((a, b) => a + b, 0) / commissions.length;
+    const perTradeCommission = avgCommission / nTrades;
+    const avgWithdrawn = withdrawnPaths.reduce(
+      (sum, wd) => sum + wd[wd.length - 1], 0
+    ) / withdrawnPaths.length;
+    const avgR = rMultiples.reduce((a, b) => a + b, 0) / rMultiples.length;
+
+    lastRun = {
+      paths, basePaths, withdrawnPaths, wins,
+      cap, nTrades, nSims,
+      riskPct, rr, stopD, pv,
+      stats, ddStats,
+      currency: $('currency').value,
+      commissionPct: num($('commissionPct').value),
+      avgCommission,
+      perTradeCommission,
+      profitMode,
+      avgWithdrawn,
+      avgR,
+    };
+
+    setHighlightedTrader();
+
+    plotEquity(paths, cap);
+    plotDistribution(stats.finalArr, cap);
+    plotDrawdown(paths);
+    renderReport(stats, ddStats, cap, nTrades, nSims, riskPct, rr, stopD, pv);
+    refreshTable();
+    renderProbabilityTable();
+    renderEvaluation();
+
+    const elapsed = ((t1 - t0) / 1000).toFixed(2);
+    $('statusBar').textContent =
+      `✅ ${toPersianDigits(nSims.toLocaleString('en'))} مسیر × ${toPersianDigits(nTrades)} معامله در ${toPersianDigits(elapsed)} ثانیه`;
+  }, 30);
+}
+
+function computeStats(paths, cap) {
+  const finalArr = paths.map(p => p[p.length - 1]);
+  const sorted   = [...finalArr].sort((a, b) => a - b);
+  const mean     = finalArr.reduce((a, b) => a + b, 0) / finalArr.length;
+  const median   = sorted[Math.floor(sorted.length / 2)];
+  const std      = Math.sqrt(
+    finalArr.reduce((a, b) => a + (b - mean) ** 2, 0) / finalArr.length
+  );
+
+  let profitCount = 0;
+  let ruinCount   = 0;
+  const ruinThreshold = cap * 0.1;
+  paths.forEach(p => {
+    if (p[p.length - 1] > cap) profitCount++;
+    for (let i = 0; i < p.length; i++) {
+      if (p[i] <= ruinThreshold) { ruinCount++; break; }
+    }
+  });
+
+  return {
+    finalArr, mean, median, std,
+    min: sorted[0],
+    max: sorted[sorted.length - 1],
+    p5:  sorted[Math.floor(sorted.length * 0.05)],
+    p95: sorted[Math.floor(sorted.length * 0.95)],
+    probProfit: profitCount / paths.length,
+    ruinProb:   ruinCount / paths.length,
+  };
+}
+
+function computeDDStats(paths) {
+  const maxDDs = [];
+  const ddPaths = paths.map(p => {
+    let peak = p[0];
+    const dd = new Float64Array(p.length);
+    let worst = 0;
+    for (let i = 0; i < p.length; i++) {
+      if (p[i] > peak) peak = p[i];
+      const d = peak > 0 ? (p[i] - peak) / peak * 100 : 0;
+      dd[i] = d;
+      if (d < worst) worst = d;
+    }
+    maxDDs.push(worst);
+    return dd;
+  });
+  const sortedMax = [...maxDDs].sort((a, b) => a - b);
+  return {
+    ddPaths, maxDDs,
+    meanDD:  maxDDs.reduce((a, b) => a + b, 0) / maxDDs.length,
+    medianDD: sortedMax[Math.floor(sortedMax.length / 2)],
+    worstDD: sortedMax[0],
+    bestDD:  sortedMax[sortedMax.length - 1],
+  };
+}
+
+// =========================================================
+//  نمودارها
+// =========================================================
+const PLOT_LAYOUT_BASE = {
+  paper_bgcolor: '#111111',
+  plot_bgcolor:  '#111111',
+  font: { color: '#cccccc', family: 'Tahoma', size: 12 },
+  margin: { l: 70, r: 20, t: 50, b: 60 },
+  xaxis: { gridcolor: '#2a2a2a', zerolinecolor: '#444',
+           tickfont: { family: 'Tahoma', size: 11 } },
+  yaxis: { gridcolor: '#2a2a2a', zerolinecolor: '#444',
+           tickfont: { family: 'Tahoma', size: 11 } },
+  showlegend: true,
+  legend: {
+    bgcolor: '#222222', bordercolor: '#444',
+    font: { size: 11, color: '#dddddd', family: 'Tahoma' },
+  },
+};
+const PLOT_CONFIG = {
+  responsive: true,
+  displaylogo: false,
+  modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+};
+
+function plotEquity(paths, cap) {
+  const nSteps = paths[0].length;
+  const xAxis  = Array.from({ length: nSteps }, (_, i) => i);
+  const traces = [];
+
+  const nShow = Math.min(200, paths.length);
+  const step  = Math.max(1, Math.floor(paths.length / nShow));
+  for (let i = 0; i < paths.length; i += step) {
+    if (i === highlightedIdx) continue;
+    traces.push({
+      x: xAxis, y: Array.from(paths[i]),
+      type: 'scatter', mode: 'lines',
+      line: { color: 'rgba(0, 224, 176, 0.06)', width: 0.5 },
+      showlegend: false, hoverinfo: 'skip',
+    });
+  }
+
+  if (highlightedIdx >= 0 && highlightedIdx < paths.length) {
+    const hlPath = paths[highlightedIdx];
+    const hlFinal = hlPath[hlPath.length - 1];
+    const hlResult = hlFinal - cap;
+    const hlColor = hlResult >= 0 ? '#7dffb0' : '#ff6b6b';
+    const hlLabel = {
+      worst:  '😰 بدشانس‌ترین',
+      best:   '🍀 خوش‌شانس‌ترین',
+      median: '📊 میانه',
+      random: '🎲 تصادفی',
+      none:   'برجسته'
+    }[highlightMode] || 'برجسته';
+
+    traces.push({
+      x: xAxis, y: Array.from(hlPath),
+      type: 'scatter', mode: 'lines+markers',
+      name: hlLabel + ' (' + (hlResult >= 0 ? '+' : '') + fmtFa(hlResult, 0) + ')',
+      line: { color: hlColor, width: 3 },
+      marker: { size: 7, color: hlColor, line: { color: '#fff', width: 1 } },
+      hovertemplate: 'معامله %{x}<br>سرمایه: %{y:,.0f}<extra></extra>',
+    });
+  }
+
+  const meanPath = xAxis.map(i => {
+    let s = 0;
+    for (const p of paths) s += p[i];
+    return s / paths.length;
+  });
+  traces.push({
+    x: xAxis, y: meanPath, type: 'scatter', mode: 'lines',
+    name: 'میانگین', line: { color: '#ffb86b', width: 2 },
+  });
+
+  const medPath = xAxis.map(i => {
+    const arr = paths.map(p => p[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length / 2)];
+  });
+  traces.push({
+    x: xAxis, y: medPath, type: 'scatter', mode: 'lines',
+    name: 'میانه', line: { color: '#ff6b9d', width: 2, dash: 'dash' },
+  });
+
+  const p5Path  = xAxis.map(i => {
+    const arr = paths.map(p => p[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length * 0.05)];
+  });
+  const p95Path = xAxis.map(i => {
+    const arr = paths.map(p => p[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length * 0.95)];
+  });
+  traces.push({
+    x: xAxis, y: p5Path, type: 'scatter', mode: 'lines',
+    name: 'صدک ۵٪', line: { color: '#ff5555', width: 1.5, dash: 'dot' },
+  });
+  traces.push({
+    x: xAxis, y: p95Path, type: 'scatter', mode: 'lines',
+    name: 'صدک ۹۵٪', line: { color: '#55aaff', width: 1.5, dash: 'dot' },
+  });
+
+  const layout = {
+    ...PLOT_LAYOUT_BASE,
+    title: {
+      text: `${toPersianDigits(paths.length)} تریدر — همه با استراتژی یکسان، ولی بخت متفاوت`,
+      font: { color: '#eeeeee', size: 15 }
+    },
+    xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: 'شماره معامله' },
+    yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: 'سرمایه' },
+    shapes: [{
+      type: 'line', x0: 0, x1: nSteps - 1, y0: cap, y1: cap,
+      line: { color: '#888', width: 1, dash: 'dash' },
+    }],
+    annotations: [{
+      x: 0.5, y: -0.22, xref: 'paper', yref: 'paper',
+      text: 'هر خط = یک تریدر خیالی | خطوط نازک = تریدرها | خطوط ضخیم = میانگین، میانه، صدک‌ها',
+      showarrow: false,
+      font: { color: '#888', size: 11 }
+    }],
+  };
+
+  Plotly.newPlot('chartEquity', traces, layout, PLOT_CONFIG);
+}
+
+function plotDistribution(finals, cap) {
+  const trace = {
+    x: finals, type: 'histogram', nbinsx: 60,
+    marker: { color: '#00b894', line: { color: '#0a5c4a', width: 1 } },
+    name: 'سرمایه نهایی',
+    hovertemplate: 'سرمایه: %{x:,.0f}<br>تعداد تریدرها: %{y}<extra></extra>',
+  };
+
+  const mean   = finals.reduce((a, b) => a + b, 0) / finals.length;
+  const sorted = [...finals].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+
+  const layout = {
+    ...PLOT_LAYOUT_BASE,
+    title: {
+      text: `توزیع سرمایه نهایی (${toPersianDigits(finals.length)} تریدر)`,
+      font: { color: '#eeeeee', size: 15 }
+    },
+    xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: 'سرمایه نهایی' },
+    yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: 'تعداد تریدرها' },
+    bargap: 0.05,
+    shapes: [
+      { type: 'line', x0: cap,    x1: cap,    y0: 0, y1: 1, yref: 'paper',
+        line: { color: '#fff', width: 2, dash: 'dash' } },
+      { type: 'line', x0: mean,   x1: mean,   y0: 0, y1: 1, yref: 'paper',
+        line: { color: '#ffb86b', width: 2 } },
+      { type: 'line', x0: median, x1: median, y0: 0, y1: 1, yref: 'paper',
+        line: { color: '#ff6b9d', width: 2, dash: 'dash' } },
+    ],
+    annotations: [
+      { x: cap,    y: 1.08, yref: 'paper', text: 'سرمایه اولیه',
+        showarrow: false, font: { color: '#fff', size: 11 } },
+      { x: mean,   y: 1.08, yref: 'paper', text: 'میانگین',
+        showarrow: false, font: { color: '#ffb86b', size: 11 } },
+      { x: median, y: 1.08, yref: 'paper', text: 'میانه',
+        showarrow: false, font: { color: '#ff6b9d', size: 11 } },
+      { x: 0.5, y: -0.22, xref: 'paper', yref: 'paper',
+        text: 'هر ستون = تعداد تریدرهایی که آن سرمایه را به دست آورده‌اند',
+        showarrow: false, font: { color: '#888', size: 11 } },
+    ],
+  };
+
+  Plotly.newPlot('chartDist', [trace], layout, PLOT_CONFIG);
+}
+
+function plotDrawdown(paths) {
+  const nSteps = paths[0].length;
+  const xAxis  = Array.from({ length: nSteps }, (_, i) => i);
+  const ddPaths = paths.map(p => {
+    let peak = p[0];
+    const dd = new Float64Array(p.length);
+    for (let i = 0; i < p.length; i++) {
+      if (p[i] > peak) peak = p[i];
+      dd[i] = peak > 0 ? (p[i] - peak) / peak * 100 : 0;
+    }
+    return dd;
+  });
+
+  const traces = [];
+  const nShow = Math.min(200, ddPaths.length);
+  const step  = Math.max(1, Math.floor(ddPaths.length / nShow));
+  for (let i = 0; i < ddPaths.length; i += step) {
+    traces.push({
+      x: xAxis, y: Array.from(ddPaths[i]),
+      type: 'scatter', mode: 'lines',
+      line: { color: 'rgba(255, 85, 85, 0.05)', width: 0.5 },
+      showlegend: false, hoverinfo: 'skip',
+    });
+  }
+
+  const meanDD = xAxis.map(i => {
+    let s = 0;
+    for (const d of ddPaths) s += d[i];
+    return s / ddPaths.length;
+  });
+  traces.push({
+    x: xAxis, y: meanDD, type: 'scatter', mode: 'lines',
+    name: 'میانگین DD', line: { color: '#ffb86b', width: 2 },
+  });
+
+  const medDD = xAxis.map(i => {
+    const arr = ddPaths.map(d => d[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length / 2)];
+  });
+  traces.push({
+    x: xAxis, y: medDD, type: 'scatter', mode: 'lines',
+    name: 'میانه DD', line: { color: '#ff6b9d', width: 2, dash: 'dash' },
+  });
+
+  const p5DD = xAxis.map(i => {
+    const arr = ddPaths.map(d => d[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length * 0.05)];
+  });
+  traces.push({
+    x: xAxis, y: p5DD, type: 'scatter', mode: 'lines',
+    name: 'صدک ۵٪ (بدترین)', line: { color: '#ff2222', width: 1.5, dash: 'dot' },
+  });
+
+  const p95DD = xAxis.map(i => {
+    const arr = ddPaths.map(d => d[i]).sort((a, b) => a - b);
+    return arr[Math.floor(arr.length * 0.95)];
+  });
+  traces.push({
+    x: xAxis, y: p95DD, type: 'scatter', mode: 'lines',
+    name: 'صدک ۹۵٪ (بهترین)', line: { color: '#55aaff', width: 1.5, dash: 'dot' },
+  });
+
+  const layout = {
+    ...PLOT_LAYOUT_BASE,
+    title: {
+      text: 'افت سرمایه (Drawdown %) — هر خط = یک تریدر',
+      font: { color: '#eeeeee', size: 15 }
+    },
+    xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: 'شماره معامله' },
+    yaxis: { ...PLOT_LAYOUT_BASE.yaxis, title: 'افت %', range: [null, 1] },
+    shapes: [
+      { type: 'line', x0: 0, x1: nSteps - 1, y0: 0, y1: 0,
+        line: { color: '#666', width: 1, dash: 'dash' } },
+      { type: 'line', x0: 0, x1: nSteps - 1, y0: -10, y1: -10,
+        line: { color: '#ff9944', width: 1, dash: 'dot' } },
+      { type: 'line', x0: 0, x1: nSteps - 1, y0: -20, y1: -20,
+        line: { color: '#ff4444', width: 1, dash: 'dot' } },
+      { type: 'line', x0: 0, x1: nSteps - 1, y0: -30, y1: -30,
+        line: { color: '#cc0000', width: 1, dash: 'dot' } },
+    ],
+    annotations: [{
+      x: 0.5, y: -0.22, xref: 'paper', yref: 'paper',
+      text: 'خطوط راهنما: -۱۰٪ | -۲۰٪ | -۳۰٪ | خطوط نارنجی/صورتی = میانگین و میانه',
+      showarrow: false,
+      font: { color: '#888', size: 11 }
+    }],
+  };
+
+  Plotly.newPlot('chartDD', traces, layout, PLOT_CONFIG);
+}
+
+function plotCDF() {
+  if (!lastRun) {
+    Plotly.purge('chartCDF');
+    return;
+  }
+
+  const { nTrades } = lastRun;
+  const wr = num($('winRate').value) / 100;
+  const cdfData = computeCDFData(nTrades, wr);
+
+  const xValues = cdfData.map(d => d.minWins);
+  const yValues = cdfData.map(d => d.prob * 100);
+
+  const mainTrace = {
+    x: xValues,
+    y: yValues,
+    type: 'scatter',
+    mode: 'lines+markers',
+    name: 'احتمال تجمعی',
+    line: { color: '#00e0b0', width: 3 },
+    marker: { size: 8, color: '#00e0b0', line: { color: '#fff', width: 2 } },
+    fill: 'tozeroy',
+    fillcolor: 'rgba(0, 224, 176, 0.1)',
+    hovertemplate: 'حداقل %{x} برد<br>احتمال: %{y:.2f}%<extra></extra>',
+  };
+
+  const medianLine = {
+    x: [0, nTrades],
+    y: [50, 50],
+    type: 'scatter',
+    mode: 'lines',
+    name: '۵۰٪ احتمال',
+    line: { color: '#ff6b9d', width: 1.5, dash: 'dash' },
+    hoverinfo: 'skip',
+  };
+
+  const confLine = {
+    x: [0, nTrades],
+    y: [90, 90],
+    type: 'scatter',
+    mode: 'lines',
+    name: '۹۰٪ احتمال',
+    line: { color: '#7db8ff', width: 1.5, dash: 'dot' },
+    hoverinfo: 'skip',
+  };
+
+  const layout = {
+    ...PLOT_LAYOUT_BASE,
+    title: {
+      text: `📈 احتمال تجمعی: با چه احتمالی حداقل X برد خواهم داشت؟`,
+      font: { color: '#eeeeee', size: 14 }
+    },
+    xaxis: {
+      ...PLOT_LAYOUT_BASE.xaxis,
+      title: 'حداقل تعداد برد',
+      dtick: 1,
+    },
+    yaxis: {
+      ...PLOT_LAYOUT_BASE.yaxis,
+      title: 'احتمال (٪)',
+      range: [0, 105],
+      ticksuffix: '٪',
+    },
+  };
+
+  Plotly.newPlot('chartCDF', [mainTrace, medianLine, confLine], layout, PLOT_CONFIG);
+}
+
+// =========================================================
+//  جدول معاملات
+// =========================================================
+function refreshTable() {
+  if (!lastRun) return;
+  const { paths, basePaths, withdrawnPaths, wins, cap, nTrades, riskPct, stopD, pv } = lastRun;
+  const mode = $('pathMode').value;
+
+  const finals = paths.map(p => p[p.length - 1]);
+  let idx;
+  if (mode === 'median') {
+    const sortedIdx = finals.map((_, i) => i).sort((a, b) => finals[a] - finals[b]);
+    idx = sortedIdx[Math.floor(sortedIdx.length / 2)];
+  } else if (mode === 'worst') {
+    idx = finals.indexOf(Math.min(...finals));
+  } else if (mode === 'best') {
+    idx = finals.indexOf(Math.max(...finals));
+  } else {
+    idx = Math.floor(Math.random() * paths.length);
+  }
+
+  const path = paths[idx];
+  const basePath = basePaths[idx];
+  const wdPath = withdrawnPaths[idx];
+  const w = wins[idx];
+
+  const commPct = num($('commissionPct').value) / 100;
+  const entryPrice = num($('entryPrice').value);
+  const isLock = lastRun.profitMode === 'lock';
+
+  const tbody = $('tradesTable').querySelector('tbody');
+  let html = '';
+  let peak = cap;
+
+  let sumRisk = 0;
+  let sumCommission = 0;
+  let sumPL = 0;
+  let sumTradeProfit = 0;
+  let sumR = 0;
+  let sumWins = 0;
+  let sumLosses = 0;
+
+  for (let i = 0; i < nTrades; i++) {
+    const prevTotal = (i === 0) ? cap : path[i];
+    const total = path[i + 1];
+    const base = basePath[i + 1];
+    const wd = wdPath[i + 1];
+    const wdPrev = (i === 0) ? 0 : wdPath[i];
+
+    let tradeProfit = 0;
+    if (isLock) {
+      tradeProfit = w[i] ? (wd - wdPrev) : 0;
+    } else {
+      const plBeforeCommission = total - prevTotal;
+      const posAtThisTrade = (stopD > 0 && pv > 0) ? (basePath[i] * riskPct) / (stopD * pv) : 0;
+      const commThisTrade = posAtThisTrade * entryPrice * commPct;
+      tradeProfit = w[i] ? (plBeforeCommission + commThisTrade) : 0;
+    }
+
+    // ⭐ Peak را اول آپدیت کن، سپس DD% را حساب کن
+    if (total > peak) peak = total;
+    const ddPct = peak > 0 ? Math.min(0, (total - peak) / peak * 100) : 0;
+
+    const riskAmt = basePath[i] * riskPct;
+    const pl = total - prevTotal;
+    const rMult = riskAmt > 0 ? pl / riskAmt : 0;
+    const posSize = (stopD > 0 && pv > 0) ? riskAmt / (stopD * pv) : 0;
+    const commission = posSize * entryPrice * commPct;
+    const cls = w[i] ? 'win' : 'loss';
+    const result = w[i] ? 'برد' : 'باخت';
+
+    sumRisk += riskAmt;
+    sumCommission += commission;
+    sumPL += pl;
+    sumTradeProfit += tradeProfit;
+    sumR += rMult;
+    if (w[i]) sumWins++; else sumLosses++;
+
+    html += `<tr class="${cls}">
+      <td>${toPersianDigits(i + 1)}</td>
+      <td>${result}</td>
+      <td>${fmtFa(base, 0)}</td>
+      <td>${tradeProfit > 0 ? fmtFa(tradeProfit, 0) : '—'}</td>
+      <td>${fmtFa(wd, 0)}</td>
+      <td>${fmtFa(total, 0)}</td>
+      <td>${fmtFa(peak, 0)}</td>
+      <td>${toPersianDigits(ddPct.toFixed(2))}</td>
+      <td>${fmtFa(riskAmt, 0)}</td>
+      <td>${fmtFa(posSize, 4)}</td>
+      <td>${fmtFa(commission, 0)}</td>
+      <td>${toPersianDigits((rMult >= 0 ? '+' : '') + rMult.toFixed(2))}</td>
+      <td>${toPersianDigits((pl >= 0 ? '+' : '') + Math.round(pl).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','))}</td>
+    </tr>`;
+  }
+
+  const finalBase = basePath[nTrades];
+  const finalWithdrawn = wdPath[nTrades];
+  const finalTotal = path[nTrades];
+  const netResult = finalTotal - cap;
+  const avgR = nTrades > 0 ? sumR / nTrades : 0;
+  const winRateActual = nTrades > 0 ? (sumWins / nTrades * 100) : 0;
+
+  const collectRow = document.createElement('tr');
+  collectRow.style.cssText = 'background:#0a1f1a; color:#00e0b0; font-weight:bold; border-top:3px solid #00e0b0;';
+  collectRow.innerHTML = `
+    <td colspan="3" style="text-align:right; padding-right:15px; padding:10px; font-size:13px;">📊 جمع کل:</td>
+    <td style="color:#7dffb0; font-size:13px;">${sumTradeProfit > 0 ? fmtFa(sumTradeProfit, 0) : '—'}</td>
+    <td style="color:#7de8ff; font-size:13px;">${fmtFa(finalWithdrawn, 0)}</td>
+    <td style="color:#00e0b0; font-size:13px;">${fmtFa(finalTotal, 0)}</td>
+    <td>—</td>
+    <td>—</td>
+    <td style="color:#ffb86b; font-size:13px;">${fmtFa(sumRisk, 0)}</td>
+    <td>—</td>
+    <td style="color:#ffcc66; font-size:13px;">${fmtFa(sumCommission, 0)}</td>
+    <td style="color:${avgR >= 0 ? '#7dffb0' : '#ff8888'}; font-size:13px;">
+      ${toPersianDigits((avgR >= 0 ? '+' : '') + avgR.toFixed(2))}
+    </td>
+    <td style="color:${netResult >= 0 ? '#7dffb0' : '#ff8888'}; font-size:13px;">
+      ${netResult >= 0 ? '+' : '−'} ${fmtFa(Math.abs(netResult), 0)}
+    </td>
+  `;
+
+  const statsRow = document.createElement('tr');
+  statsRow.style.cssText = 'background:#111; color:#cccccc; font-size:13px; border-bottom:2px solid #00e0b0;';
+  statsRow.innerHTML = `
+    <td colspan="4" style="text-align:right; padding-right:15px; padding:10px;">
+      📈 برد: <span style="color:#7dffb0;">${toPersianDigits(sumWins)}</span>
+      | باخت: <span style="color:#ff8888;">${toPersianDigits(sumLosses)}</span>
+      | Win Rate: <span style="color:#ffb86b;">${toPersianDigits(winRateActual.toFixed(1))}%</span>
+    </td>
+    <td colspan="4" style="text-align:center; padding:10px;">
+      میانگین R: <span style="color:${avgR >= 0 ? '#7dffb0' : '#ff8888'}; font-weight:bold;">
+        ${toPersianDigits((avgR >= 0 ? '+' : '') + avgR.toFixed(3))}
+      </span>
+    </td>
+    <td colspan="5" style="text-align:left; padding-left:15px; padding:10px;">
+      بالانس پایه نهایی: <span style="color:#c58fff; font-weight:bold;">${fmtFa(finalBase, 0)}</span>
+    </td>
+  `;
+
+  tbody.innerHTML = html;
+  tbody.appendChild(collectRow);
+  tbody.appendChild(statsRow);
+}
+
+// =========================================================
+//  توزیع احتمال
+// =========================================================
+function renderProbabilityTable() {
+  if (!lastRun) {
+    $('probSummary').innerHTML =
+      '<div class="prob-summary-card">برای دیدن تحلیل، ابتدا شبیه‌سازی را اجرا کنید</div>';
+    $('probExtraSummary').innerHTML = '';
+    $('probTable').querySelector('tbody').innerHTML = '';
+    $('cdfTable').querySelector('tbody').innerHTML = '';
+    Plotly.purge('chartCDF');
+    return;
+  }
+
+  const { cap, nTrades, riskPct, rr } = lastRun;
+  const wr = num($('winRate').value) / 100;
+  const commPctVal = num($('commissionPct').value) / 100;
+  const entryPrice = num($('entryPrice').value);
+  const stopD = num($('stopDistance').value);
+  const pv = num($('pipValue').value) || 1;
+  const s = sym();
+
+  const maxLossProb = Math.pow(1 - wr, nTrades);
+  const expectedWin = wr * rr - (1 - wr);
+  const expectedR = expectedWin * nTrades;
+
+  const theoreticalMaxLoss = cap * (1 - Math.pow(1 - riskPct, nTrades));
+
+  const p95Loss = calculateMaxLossAtConfidence(
+    cap, riskPct, nTrades, 0.95, wr, stopD, pv, entryPrice, commPctVal, rr
+  );
+
+  const p50Loss = calculateMaxLossAtConfidence(
+    cap, riskPct, nTrades, 0.50, wr, stopD, pv, entryPrice, commPctVal, rr
+  );
+
+  const summaryHtml = `
+    <div class="prob-summary-card">
+      <strong>📊 خلاصه احتمالات:</strong><br>
+      با <strong>Win Rate = ${toPersianDigits((wr*100).toFixed(1))}٪</strong> و
+      <strong>R:R = ۱ : ${toPersianDigits(rr.toFixed(2))}</strong> و
+      <strong>${toPersianDigits(nTrades)} معامله</strong>:<br>
+      • احتمال همه ${toPersianDigits(nTrades)} باخت: 
+        <span class="pct-red">${toPersianDigits((maxLossProb*100).toFixed(4))}٪</span>
+        <span class="pct-gray">(یعنی ۱ بار در ${toPersianDigits(Math.round(1/maxLossProb))} بار)</span><br>
+      • امید ریاضی هر معامله: 
+        <span class="${expectedWin >= 0 ? 'pct-green' : 'pct-red'}">
+          ${toPersianDigits((expectedWin >= 0 ? '+' : '') + expectedWin.toFixed(3))} R
+        </span><br>
+      • امید کل در ${toPersianDigits(nTrades)} معامله: 
+        <span class="${expectedR >= 0 ? 'pct-green' : 'pct-red'}">
+          ${toPersianDigits((expectedR >= 0 ? '+' : '') + expectedR.toFixed(2))} R
+        </span>
+    </div>
+  `;
+  $('probSummary').innerHTML = summaryHtml;
+
+  const extraSummaryHtml = `
+    <div class="prob-summary-card">
+      <strong>📉 تحلیل ضررهای محتمل:</strong><br>
+      • حداکثر ضرر تئوری (بدترین سناریو): 
+        <span class="pct-red">${fmtFa(theoreticalMaxLoss, 0)} ${s}</span>
+        <span class="pct-red">(${toPersianDigits((theoreticalMaxLoss/cap*100).toFixed(2))}٪)</span>
+        — احتمال: <span class="pct-yellow">${toPersianDigits((maxLossProb*100).toFixed(4))}٪</span><br>
+      • حداکثر ضرر با <strong>۹۵٪ اطمینان</strong>: 
+        <span class="pct-red">${fmtFa(p95Loss, 0)} ${s}</span>
+        <span class="pct-red">(${toPersianDigits((p95Loss/cap*100).toFixed(2))}٪)</span><br>
+      • حداکثر ضرر با <strong>۵۰٪ اطمینان</strong> (میانه): 
+        <span class="pct-red">${fmtFa(p50Loss, 0)} ${s}</span>
+        <span class="pct-red">(${toPersianDigits((p50Loss/cap*100).toFixed(2))}٪)</span>
+    </div>
+  `;
+  $('probExtraSummary').innerHTML = extraSummaryHtml;
+
+  const tbody = $('probTable').querySelector('tbody');
+  let html = '';
+
+  let maxProb = 0;
+  for (let wins = 0; wins <= nTrades; wins++) {
+    const p = binomialProbability(nTrades, wins, wr);
+    maxProb = Math.max(maxProb, p);
+  }
+
+  let mostLikelyWins = 0;
+  let mostLikelyProb = 0;
+  for (let wins = 0; wins <= nTrades; wins++) {
+    const p = binomialProbability(nTrades, wins, wr);
+    if (p > mostLikelyProb) {
+      mostLikelyProb = p;
+      mostLikelyWins = wins;
+    }
+  }
+
+  for (let wins = nTrades; wins >= 0; wins--) {
+    const losses = nTrades - wins;
+    const prob = binomialProbability(nTrades, wins, wr);
+
+    let finalCap = cap;
+    for (let i = 0; i < wins; i++) {
+      const risk = finalCap * riskPct;
+      const commission = (stopD > 0 && pv > 0) ? (risk / (stopD * pv)) * entryPrice * commPctVal : 0;
+      finalCap += risk * rr - commission;
+    }
+    for (let i = 0; i < losses; i++) {
+      const risk = finalCap * riskPct;
+      const commission = (stopD > 0 && pv > 0) ? (risk / (stopD * pv)) * entryPrice * commPctVal : 0;
+      finalCap = Math.max(0, finalCap - risk - commission);
+    }
+
+    const diff = finalCap - cap;
+    const diffPct = (diff / cap) * 100;
+
+    const barWidth = (prob / maxProb) * 100;
+    const isWin = diff >= 0;
+    let rowClass = isWin ? 'win-row' : 'loss-row';
+    if (wins === mostLikelyWins) rowClass += ' highlight';
+
+    html += `<tr class="${rowClass}">
+      <td><strong>${toPersianDigits(wins)} برد / ${toPersianDigits(losses)} باخت</strong>
+        ${wins === mostLikelyWins ? ' <span style="color:#00e0b0;">⭐</span>' : ''}
+      </td>
+      <td style="color:#7dffb0; font-weight:bold;">${toPersianDigits(wins)}</td>
+      <td style="color:${isWin ? '#7dffb0' : '#ff8888'}; font-weight:bold;">
+        ${toPersianDigits((prob*100).toFixed(3))}٪
+      </td>
+      <td style="font-weight:bold;">${fmtFa(finalCap, 0)}</td>
+      <td>
+        <div style="color:${isWin ? '#7dffb0' : '#ff8888'}; font-weight:bold; font-size:13px;">
+          ${diff >= 0 ? '+' : '−'} ${fmtFa(Math.abs(diff), 0)}
+        </div>
+        <div style="font-size:12px; color:${isWin ? '#7dffb0' : '#ff8888'}; margin-top:2px;">
+          (${diffPct >= 0 ? '+' : '−'}${toPersianDigits(Math.abs(diffPct).toFixed(2))}٪)
+        </div>
+      </td>
+      <td>
+        <div class="prob-bar-container">
+          <div class="prob-bar ${isWin ? '' : 'neg'}" style="width:${barWidth}%;"></div>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  tbody.innerHTML = html;
+
+  plotCDF();
+  renderCDFTable();
+}
+
+// =========================================================
+//  جدول تجمعی
+// =========================================================
+function renderCDFTable() {
+  if (!lastRun) {
+    $('cdfTable').querySelector('tbody').innerHTML = '';
+    return;
+  }
+
+  const { nTrades, riskPct, rr } = lastRun;
+  const wr = num($('winRate').value) / 100;
+  const cdfData = computeCDFData(nTrades, wr);
+
+  const tbody = $('cdfTable').querySelector('tbody');
+  let html = '';
+
+  const breakEvenWins = Math.ceil(nTrades / (rr + 1));
+  const goodWins = Math.ceil(nTrades * 0.6);
+  const excellentWins = Math.ceil(nTrades * 0.7);
+
+  for (let k = nTrades; k >= 0; k--) {
+    const data = cdfData[k];
+    const prob = data.prob;
+    const probPct = prob * 100;
+
+    let rowClass = '';
+    let badge = '';
+    let interpretation = '';
+    let isProfit = k >= breakEvenWins;
+
+    if (k >= excellentWins) {
+      rowClass = 'cdf-row-good';
+      badge = '<span class="threshold-badge ok">سود عالی</span>';
+      interpretation = 'سود خیلی خوب ✅';
+    } else if (k >= goodWins) {
+      rowClass = 'cdf-row-good';
+      badge = '<span class="threshold-badge ok">سود خوب</span>';
+      interpretation = 'سود قابل توجه ✅';
+    } else if (k >= breakEvenWins) {
+      rowClass = 'cdf-row-warn';
+      badge = '<span class="threshold-badge warn">سود کم</span>';
+      interpretation = 'مرز سوددهی';
+    } else {
+      rowClass = 'cdf-row-bad';
+      badge = '<span class="threshold-badge danger">ضرر</span>';
+      interpretation = 'ضرر محتمل';
+    }
+
+    const barWidth = probPct;
+
+    html += `<tr class="${rowClass}">
+      <td><strong>حداقل ${toPersianDigits(k)} برد</strong> ${badge}</td>
+      <td style="color:${isProfit ? '#7dffb0' : '#ff8888'}; font-weight:bold; font-size:15px;">
+        ${toPersianDigits(probPct.toFixed(2))}٪
+      </td>
+      <td style="color:#aaa; font-size:12.5px;">${interpretation}</td>
+      <td>
+        <div class="prob-bar-container">
+          <div class="prob-bar ${isProfit ? '' : 'neg'}" style="width:${barWidth}%;"></div>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  tbody.innerHTML = html;
+}
+
+// =========================================================
+//  ارزیابی حرفه‌ای
+// =========================================================
+function renderEvaluation() {
+  if (!lastRun) {
+    $('evalSummary').innerHTML =
+      '<div class="eval-summary-box">برای دیدن ارزیابی، ابتدا شبیه‌سازی را اجرا کنید</div>';
+    $('evalChart').innerHTML = '';
+    return;
+  }
+
+  const { cap, nTrades, riskPct, rr } = lastRun;
+  const wr = num($('winRate').value) / 100;
+  const commPctVal = num($('commissionPct').value) / 100;
+  const entryPrice = num($('entryPrice').value);
+  const stopD = num($('stopDistance').value);
+  const pv = num($('pipValue').value) || 1;
+  const s = sym();
+
+  const theoreticalMaxLoss = cap * (1 - Math.pow(1 - riskPct, nTrades));
+  const p95Loss = calculateMaxLossAtConfidence(
+    cap, riskPct, nTrades, 0.95, wr, stopD, pv, entryPrice, commPctVal, rr
+  );
+  const p50Loss = calculateMaxLossAtConfidence(
+    cap, riskPct, nTrades, 0.50, wr, stopD, pv, entryPrice, commPctVal, rr
+  );
+
+  const theoreticalPct = (theoreticalMaxLoss / cap) * 100;
+  const p95Pct = (p95Loss / cap) * 100;
+  const p50Pct = (p50Loss / cap) * 100;
+
+  const standards = {
+    theoretical: { conservative: 10, balanced: 20, aggressive: 30 },
+    p95: { conservative: 5, balanced: 10, aggressive: 15 },
+    p50: { conservative: 3, balanced: 7, aggressive: 10 }
+  };
+
+  const toAmount = (pct) => cap * (pct / 100);
+
+  function evaluate(actual, std) {
+    if (actual < std.conservative) return { level: 'conservative', label: '🟢 محافظه‌کار', color: 'green' };
+    if (actual < std.balanced) return { level: 'balanced', label: '🔵 متعادل', color: 'green' };
+    if (actual < std.aggressive) return { level: 'aggressive', label: '🟡 تهاجمی', color: 'yellow' };
+    return { level: 'dangerous', label: '🔴 پرخطر', color: 'red' };
+  }
+
+  const evalTheoretical = evaluate(theoreticalPct, standards.theoretical);
+  const evalP95 = evaluate(p95Pct, standards.p95);
+  const evalP50 = evaluate(p50Pct, standards.p50);
+
+  const dangerCount = [evalTheoretical, evalP95, evalP50].filter(e => e.level === 'dangerous').length;
+  const aggressiveCount = [evalTheoretical, evalP95, evalP50].filter(e => e.level === 'aggressive').length;
+
+  let overallVerdict = '';
+  let verdictClass = '';
+  let verdictMessage = '';
+
+  if (dangerCount > 0) {
+    verdictClass = 'bad';
+    overallVerdict = '🔴 تنظیمات پرخطر';
+    verdictMessage = 'حداقل یکی از معیارها در محدوده پرخطر است. Risk% را کاهش دهید.';
+  } else if (aggressiveCount >= 2) {
+    verdictClass = 'warn';
+    overallVerdict = '🟡 تنظیمات تهاجمی';
+    verdictMessage = 'تنظیمات شما در محدوده تهاجمی است. برای بلندمدت، Risk% را کمی کاهش دهید.';
+  } else if (aggressiveCount === 1) {
+    verdictClass = 'warn';
+    overallVerdict = '🟡 مرز بین متعادل و تهاجمی';
+    verdictMessage = 'تنظیمات فعلی قابل قبول است، ولی می‌تواند کمی محافظه‌کارانه‌تر باشد.';
+  } else {
+    verdictClass = 'good';
+    overallVerdict = '🟢 تنظیمات حرفه‌ای';
+    verdictMessage = 'تنظیمات شما در محدوده استاندارد حرفه‌ای است. ادامه دهید.';
+  }
+
+  const summaryHtml = `
+    <div class="eval-summary-box ${verdictClass}">
+      <strong>📊 تنظیمات فعلی شما:</strong><br>
+      • سرمایه اولیه: <strong>${fmtFa(cap)} ${s}</strong><br>
+      • <span style="color:#ff8888;">Risk% در هر معامله:</span> <strong style="color:#ff8888;">${toPersianDigits((riskPct*100).toFixed(2))}٪</strong> = <strong style="color:#ff8888;">${fmtFa(cap * riskPct, 0)} ${s}</strong><br>
+      • تعداد معاملات: <strong>${toPersianDigits(nTrades)}</strong><br>
+      • Win Rate: <strong>${toPersianDigits((wr*100).toFixed(1))}٪</strong><br>
+      • R:R: <strong>۱ : ${toPersianDigits(rr.toFixed(2))}</strong>
+    </div>
+
+    <div class="eval-verdict ${verdictClass}">
+      ${overallVerdict}
+      <div style="font-size:15px; margin-top:10px; font-weight:normal; line-height:1.8;">
+        ${verdictMessage}
+      </div>
+    </div>
+
+    <div class="eval-summary-box">
+      <strong>🎯 معیارهای حرفه‌ای (${toPersianDigits(nTrades)} معامله):</strong><br>
+      • <strong style="color:#ff8888;">حداکثر ضرر تئوری</strong> = <span style="color:#ff8888;">بدترین سناریو (${toPersianDigits(nTrades)} باخت پیاپی)</span> — احتمال فقط ۰.۱٪<br>
+      • <strong style="color:#ff8888;">۹۵٪ اطمینان</strong> = در ۹۵٪ موارد، <span style="color:#ff8888;">ضرر کمتر از این است</span><br>
+      • <strong style="color:#ff8888;">۵۰٪ (میانه)</strong> = در نیمی از موارد، <span style="color:#ff8888;">ضرر کمتر از این است</span>
+    </div>
+  `;
+  $('evalSummary').innerHTML = summaryHtml;
+
+  const tableHtml = `
+    <table class="eval-table">
+      <thead>
+        <tr>
+          <th>معیار</th>
+          <th>شما (٪)</th>
+          <th>شما (مبلغ)</th>
+          <th>محافظه‌کار 🟢</th>
+          <th>متعادل 🔵</th>
+          <th>تهاجمی 🟡</th>
+          <th>وضعیت</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:bold;">حداکثر ضرر تئوری</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:15px;">${toPersianDigits(theoreticalPct.toFixed(2))}٪</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:14px;">${fmtFa(theoreticalMaxLoss, 0)} ${s}</td>
+          <td class="eval-cell-green">&lt; ${toPersianDigits(standards.theoretical.conservative)}٪<br>
+            <span style="font-size:10.5px; color:#7dffb0;">&lt; ${fmtFa(toAmount(standards.theoretical.conservative), 0)}</span>
+          </td>
+          <td class="eval-cell-yellow">&lt; ${toPersianDigits(standards.theoretical.balanced)}٪<br>
+            <span style="font-size:10.5px; color:#ffcc66;">&lt; ${fmtFa(toAmount(standards.theoretical.balanced), 0)}</span>
+          </td>
+          <td style="color:#ff8888;">&lt; ${toPersianDigits(standards.theoretical.aggressive)}٪<br>
+            <span style="font-size:10.5px; color:#ff8888;">&lt; ${fmtFa(toAmount(standards.theoretical.aggressive), 0)}</span>
+          </td>
+          <td class="eval-cell-${evalTheoretical.color}">${evalTheoretical.label}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:bold;">۹۵٪ اطمینان</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:15px;">${toPersianDigits(p95Pct.toFixed(2))}٪</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:14px;">${fmtFa(p95Loss, 0)} ${s}</td>
+          <td class="eval-cell-green">&lt; ${toPersianDigits(standards.p95.conservative)}٪<br>
+            <span style="font-size:10.5px; color:#7dffb0;">&lt; ${fmtFa(toAmount(standards.p95.conservative), 0)}</span>
+          </td>
+          <td class="eval-cell-yellow">&lt; ${toPersianDigits(standards.p95.balanced)}٪<br>
+            <span style="font-size:10.5px; color:#ffcc66;">&lt; ${fmtFa(toAmount(standards.p95.balanced), 0)}</span>
+          </td>
+          <td style="color:#ff8888;">&lt; ${toPersianDigits(standards.p95.aggressive)}٪<br>
+            <span style="font-size:10.5px; color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p95.aggressive), 0)}</span>
+          </td>
+          <td class="eval-cell-${evalP95.color}">${evalP95.label}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:bold;">۵۰٪ (میانه)</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:15px;">${toPersianDigits(p50Pct.toFixed(2))}٪</td>
+          <td style="color:#ff8888; font-weight:bold; font-size:14px;">${fmtFa(p50Loss, 0)} ${s}</td>
+          <td class="eval-cell-green">&lt; ${toPersianDigits(standards.p50.conservative)}٪<br>
+            <span style="font-size:10.5px; color:#7dffb0;">&lt; ${fmtFa(toAmount(standards.p50.conservative), 0)}</span>
+          </td>
+          <td class="eval-cell-yellow">&lt; ${toPersianDigits(standards.p50.balanced)}٪<br>
+            <span style="font-size:10.5px; color:#ffcc66;">&lt; ${fmtFa(toAmount(standards.p50.balanced), 0)}</span>
+          </td>
+          <td style="color:#ff8888;">&lt; ${toPersianDigits(standards.p50.aggressive)}٪<br>
+            <span style="font-size:10.5px; color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p50.aggressive), 0)}</span>
+          </td>
+          <td class="eval-cell-${evalP50.color}">${evalP50.label}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="eval-ranges">
+      <div class="eval-range-card conservative">
+        <div class="eval-range-title" style="color:#7dffb0;">🟢 محافظه‌کار</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">تئوری:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.theoretical.conservative)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.theoretical.conservative), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">۹۵٪:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p95.conservative)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p95.conservative), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">میانه:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p50.conservative)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p50.conservative), 0)} ${s}</div>
+        <div style="font-size:11px; color:#888; margin-top:8px; text-align:center;">
+          مناسب بلندمدت
+        </div>
+      </div>
+
+      <div class="eval-range-card balanced">
+        <div class="eval-range-title" style="color:#55aaff;">🔵 متعادل</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">تئوری:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.theoretical.balanced)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.theoretical.balanced), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">۹۵٪:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p95.balanced)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p95.balanced), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">میانه:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p50.balanced)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p50.balanced), 0)} ${s}</div>
+        <div style="font-size:11px; color:#888; margin-top:8px; text-align:center;">
+          توصیه حرفه‌ای ⭐
+        </div>
+      </div>
+
+      <div class="eval-range-card aggressive">
+        <div class="eval-range-title" style="color:#ffcc66;">🟡 تهاجمی</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">تئوری:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.theoretical.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.theoretical.aggressive), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">۹۵٪:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p95.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p95.aggressive), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">میانه:</span>
+          <span class="value" style="color:#ff8888;">&lt; ${toPersianDigits(standards.p50.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&lt; ${fmtFa(toAmount(standards.p50.aggressive), 0)} ${s}</div>
+        <div style="font-size:11px; color:#888; margin-top:8px; text-align:center;">
+          باتجربه‌ها
+        </div>
+      </div>
+
+      <div class="eval-range-card dangerous">
+        <div class="eval-range-title" style="color:#ff6b6b;">🔴 پرخطر</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">تئوری:</span>
+          <span class="value" style="color:#ff8888;">&gt; ${toPersianDigits(standards.theoretical.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&gt; ${fmtFa(toAmount(standards.theoretical.aggressive), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">۹۵٪:</span>
+          <span class="value" style="color:#ff8888;">&gt; ${toPersianDigits(standards.p95.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&gt; ${fmtFa(toAmount(standards.p95.aggressive), 0)} ${s}</div>
+        <div class="eval-range-row">
+          <span style="color:#ff8888;">میانه:</span>
+          <span class="value" style="color:#ff8888;">&gt; ${toPersianDigits(standards.p50.aggressive)}٪</span>
+        </div>
+        <div class="eval-range-amount" style="color:#ff8888;">&gt; ${fmtFa(toAmount(standards.p50.aggressive), 0)} ${s}</div>
+        <div style="font-size:11px; color:#888; margin-top:8px; text-align:center;">
+          توصیه نمی‌شود
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('evalChart').innerHTML = tableHtml;
+}
+
+// =========================================================
+//  گزارش
+// =========================================================
+function renderReport(stats, ddStats, cap, nTrades, nSims, riskPct, rr, stopD, pv) {
+  const cur = lastRun.currency;
+  const s   = sym();
+  const riskAmt = cap * riskPct;
+  const profit  = riskAmt * rr;
+  const winRateVal = num($('winRate').value) / 100;
+  const evPerTrade = winRateVal * rr - (1 - winRateVal);
+  const worstFinal = cap * Math.pow(1 - riskPct, nTrades);
+  const maxLossAmt = cap - worstFinal;
+  const maxLossProb = Math.pow(1 - winRateVal, nTrades);
+
+  const fa = x => toPersianDigits(String(x));
+  const commPct = lastRun.commissionPct;
+  const perComm = lastRun.perTradeCommission;
+  const totalComm = lastRun.avgCommission;
+  const avgR = lastRun.avgR;
+
+  const p95Loss = calculateMaxLossAtConfidence(
+    cap, riskPct, nTrades, 0.95, winRateVal, stopD, pv,
+    num($('entryPrice').value), commPct / 100, rr
+  );
+
+  const lines = [
+    '═'.repeat(58),
+    '       گزارش شبیه‌سازی مدیریت ریسک و سرمایه',
+    '═'.repeat(58),
+    `واحد پول               : ${cur}`,
+    `سرمایه اولیه            : ${fmtFa(cap)} ${s}`,
+    `حالت سود               : ${lastRun.profitMode === 'lock' ? '💰 Profit Lock (خروج سود)' : '📈 Compound (ترکیبی)'}`,
+    '-'.repeat(58),
+    `قیمت ورود              : ${fmtFa(num($('entryPrice').value))}`,
+    `قیمت استاپ             : ${fmtFa(num($('stopPrice').value))}`,
+    `قیمت هدف (TP)          : ${fmtFa(num($('tpPrice').value))}`,
+    `ارزش هر واحد           : ${fa(pv.toFixed(4))}`,
+    '-'.repeat(58),
+    `Position Size          : ${fa(num($('posSize').value).toFixed(4))}`,
+    `فاصله استاپ            : ${fmtFa(stopD)}`,
+    `فاصله هدف              : ${fmtFa(stopD * rr)}`,
+    `نسبت R:R               : ۱ : ${fa(rr.toFixed(2))}`,
+    '-'.repeat(58),
+    `مبلغ ریسک (Risk $)     : ${fmtFa(riskAmt)} ${s}`,
+    `درصد ریسک (Risk %)     : ${fa((riskPct * 100).toFixed(4))} %`,
+    `سود بالقوه (اگر TP)    : ${fmtFa(profit)} ${s}`,
+    `حداکثر ضرر (${fa(nTrades)} باخت) : ${fmtFa(maxLossAmt)} ${s}  (${fa((maxLossAmt/cap*100).toFixed(2))}%)`,
+    `احتمال حداکثر ضرر      : ${fa((maxLossProb * 100).toFixed(4))} %`,
+    `حداکثر ضرر ۹۵٪ اطمینان : ${fmtFa(p95Loss)} ${s}  (${fa((p95Loss/cap*100).toFixed(2))}%)`,
+    '-'.repeat(58),
+    `کمیسیون هر معامله      : ${fa(commPct.toFixed(2))} %`,
+    `مبلغ کمیسیون (هر معامله): ${fmtFa(perComm)} ${s}`,
+    `مجموع کمیسیون (${fa(nTrades)} معامله): ${fmtFa(totalComm)} ${s}`,
+    '-'.repeat(58),
+    `تعداد معاملات هر مسیر  : ${fa(nTrades)}`,
+    `تعداد شبیه‌سازی         : ${fa(nSims.toLocaleString('en'))}`,
+    `امید ریاضی هر معامله   : ${fa((evPerTrade >= 0 ? '+' : '') + evPerTrade.toFixed(3))} R`,
+    `میانگین R شبیه‌سازی    : ${fa((avgR >= 0 ? '+' : '') + avgR.toFixed(3))} R`,
+    '-'.repeat(58),
+    `میانگین سود برداشت‌شده  : ${fmtFa(lastRun.avgWithdrawn)} ${s}`,
+    '-'.repeat(58),
+    `سرمایه نهایی میانگین   : ${fmtFa(stats.mean)}`,
+    `سرمایه نهایی میانه     : ${fmtFa(stats.median)}`,
+    `انحراف معیار           : ${fmtFa(stats.std)}`,
+    `بدترین حالت            : ${fmtFa(stats.min)}`,
+    `بهترین حالت            : ${fmtFa(stats.max)}`,
+    `صدک ۵٪                 : ${fmtFa(stats.p5)}`,
+    `صدک ۹۵٪                : ${fmtFa(stats.p95)}`,
+    '-'.repeat(58),
+    `احتمال سوددهی          : ${fa((stats.probProfit * 100).toFixed(2))} %`,
+    `احتمال ورشکستگی (≤۱۰٪): ${fa((stats.ruinProb * 100).toFixed(2))} %`,
+    `میانگین حداکثر افت     : ${fa(ddStats.meanDD.toFixed(2))} %`,
+    `میانه حداکثر افت       : ${fa(ddStats.medianDD.toFixed(2))} %`,
+    `بدترین حداکثر افت      : ${fa(ddStats.worstDD.toFixed(2))} %`,
+    '═'.repeat(58),
+  ];
+  $('reportText').textContent = lines.join('\n');
+}
+
+// =========================================================
+//  محتوای راهنما
+// =========================================================
+function renderHelp() {
+  const helpText = `
+<div class="help-content">
+
+  <h2>📖 راهنمای جامع شبیه‌ساز مدیریت ریسک</h2>
+
+  <h3>🎯 مفهوم «۲۰۰۰ مسیر» یعنی چه؟</h3>
+  <p>
+    وقتی می‌گوییم <code>۲۰۰۰ مسیر</code> یا <code>۲۰۰۰ شبیه‌سازی</code>، منظور این است:
+    <strong>۲۰۰۰ تریدر خیالی</strong> با <strong>همان استراتژی یکسان</strong> ولی <strong>بخت‌های متفاوت</strong>.
+  </p>
+
+  <div class="box">
+    <strong>مثال:</strong> ۲۰۰۰ تریدر با سرمایه ۵۰۰ میلیون، ۱۰ معامله، Win Rate ۵۰٪، R:R = 1:3<br>
+    <br>
+    ✅ همه قوانین یکسان<br>
+    ❌ ولی ترتیب برد و باخت‌ها متفاوت<br>
+    🎲 نتیجه: بعضی سود زیاد، بعضی ضرر، بعضی متوسط
+  </div>
+
+  <h3>🎯 تب ارزیابی حرفه‌ای</h3>
+  <p>
+    این تب، تنظیمات شما را با <strong>استانداردهای حرفه‌ای</strong> مقایسه می‌کند.
+    هم درصد و هم مبلغ ریالی را نشان می‌دهد.
+  </p>
+
+  <h3>📊 سه معیار ارزیابی</h3>
+  <table>
+    <tr>
+      <th>معیار</th>
+      <th>محافظه‌کار</th>
+      <th>متعادل</th>
+      <th>تهاجمی</th>
+    </tr>
+    <tr>
+      <td><strong>حداکثر ضرر تئوری</strong></td>
+      <td style="color:#7dffb0;">&lt; ۱۰٪</td>
+      <td style="color:#55aaff;">&lt; ۲۰٪</td>
+      <td style="color:#ffcc66;">&lt; ۳۰٪</td>
+    </tr>
+    <tr>
+      <td><strong>۹۵٪ اطمینان</strong></td>
+      <td style="color:#7dffb0;">&lt; ۵٪</td>
+      <td style="color:#55aaff;">&lt; ۱۰٪</td>
+      <td style="color:#ffcc66;">&lt; ۱۵٪</td>
+    </tr>
+    <tr>
+      <td><strong>۵۰٪ (میانه)</strong></td>
+      <td style="color:#7dffb0;">&lt; ۳٪</td>
+      <td style="color:#55aaff;">&lt; ۷٪</td>
+      <td style="color:#ffcc66;">&lt; ۱۰٪</td>
+    </tr>
+  </table>
+
+  <h3>📈 چهار خط مهم در نمودار Equity</h3>
+  <table>
+    <tr>
+      <th>خط</th>
+      <th>رنگ</th>
+      <th>معنی</th>
+    </tr>
+    <tr>
+      <td><strong>میانگین</strong></td>
+      <td style="color:#ffb86b;">نارنجی</td>
+      <td>میانگین ۲۰۰۰ تریدر</td>
+    </tr>
+    <tr>
+      <td><strong>میانه</strong></td>
+      <td style="color:#ff6b9d;">صورتی</td>
+      <td>تریدر وسط (نفر ۱۰۰۰ام)</td>
+    </tr>
+    <tr>
+      <td><strong>صدک ۵٪</strong></td>
+      <td style="color:#ff5555;">قرمز</td>
+      <td>بدشانس‌ترین ۵٪</td>
+    </tr>
+    <tr>
+      <td><strong>صدک ۹۵٪</strong></td>
+      <td style="color:#55aaff;">آبی</td>
+      <td>خوش‌شانس‌ترین ۵٪</td>
+    </tr>
+  </table>
+
+  <h3>🎲 نمودار تجمعی (CDF)</h3>
+  <div class="box">
+    <strong>تفاوت دو نمودار:</strong><br>
+    • <strong>نمودار دقیق (زنگوله)</strong>: «احتمال دقیقاً ۵ برد چقدر است؟» = ۲۴.۶٪<br>
+    • <strong>نمودار تجمعی (نزولی)</strong>: «احتمال حداقل ۵ برد چقدر است؟» = ۶۲.۳٪
+  </div>
+
+  <h3>💰 دو حالت سود: Compound vs Profit Lock</h3>
+  <table>
+    <tr>
+      <th>ویژگی</th>
+      <th>Compound 📈</th>
+      <th>Profit Lock 💰</th>
+    </tr>
+    <tr>
+      <td>سود در معامله بعدی</td>
+      <td>شرکت می‌کند</td>
+      <td>برداشت می‌شود</td>
+    </tr>
+    <tr>
+      <td>ریسک دلاری</td>
+      <td>رشد می‌کند</td>
+      <td>ثابت یا کاهشی</td>
+    </tr>
+    <tr>
+      <td>مناسب برای</td>
+      <td>رشد بلندمدت</td>
+      <td>برداشت درآمد</td>
+    </tr>
+  </table>
+
+  <h3>📐 حداکثر ضرر کل</h3>
+  <p>فرمول:</p>
+  <p><code>Risk% = 1 − (1 − MaxLoss/Capital)^(1/n)</code></p>
+
+  <h3>🎬 سه سؤال قبل از هر معامله</h3>
+  <div class="box">
+    ۱. اگر این معامله را ببازم، چقدر از سرمایه‌ام می‌رود؟<br>
+    ۲. آیا این مقدار با تحمل ریسک من سازگار است؟<br>
+    ۳. اگر ۵ معامله پشت سر هم ببازم، آیا ادامه می‌دهم؟<br>
+    <br>
+    <strong>اگر جواب سؤال ۳ «نه» است → ریسک را کم کن.</strong>
+  </div>
+
+</div>
+  `;
+  $('helpText').innerHTML = helpText;
+}
+
+// =========================================================
+//  Reset
+// =========================================================
+function resetAll() {
+  ['chartEquity', 'chartDist', 'chartDD', 'chartCDF'].forEach(id => {
+    Plotly.purge(id);
+  });
+  $('tradesTable').querySelector('tbody').innerHTML = '';
+  $('reportText').textContent = '— برای دیدن گزارش، شبیه‌سازی را اجرا کنید —';
+  $('statusBar').textContent = 'آماده';
+  lastRun = null;
+  highlightedIdx = -1;
+  renderProbabilityTable();
+  renderEvaluation();
+}
+
+// =========================================================
+//  Tabs
+// =========================================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel-' + tab.dataset.tab).classList.add('active');
+    setTimeout(() => {
+      ['chartEquity', 'chartDist', 'chartDD', 'chartCDF'].forEach(id => {
+        const el = $(id);
+        if (el && el.data) Plotly.Plots.resize(el);
+      });
+    }, 50);
+  });
+});
+
+// =========================================================
+//  راه‌اندازی
+// =========================================================
+applyFieldStates();
+$('profitModeHint').textContent = PROFIT_HINTS[$('profitMode').value] || '';
+recompute('init');
+renderHelp();
+renderProbabilityTable();
+renderEvaluation();
+window.addEventListener('resize', () => {
+  ['chartEquity', 'chartDist', 'chartDD', 'chartCDF'].forEach(id => {
+    const el = $(id);
+    if (el && el.data) Plotly.Plots.resize(el);
+  });
+});
+</script>
+
+</body>
+</html>
